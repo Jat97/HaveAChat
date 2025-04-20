@@ -1,5 +1,6 @@
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
+const path = require('path');
+const cloudinary = require('cloudinary');
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -11,10 +12,10 @@ cloudinary.config({
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if(file.fieldname === 'profile') {
-            cb(null, '../../express-chatapp/public/images/profilepictures');
+            cb(null, '../express-chatapp/public/profilepictures');
         }
         else if (file.fieldname === 'chat') {
-            cb(null, '../../express-chatapp/public/images/chatmessages');
+            cb(null, '../express-chatapp/public/chatmessages');
         }
     },
     filename: (req, file, cb) => {
@@ -24,11 +25,15 @@ const storage = multer.diskStorage({
 
 module.exports.upload = multer({storage: storage});
 
-module.exports.image;
-
 module.exports.uploadImage = async (req) => {
-    result = req.file !== undefined ? 
-        await cloudinary.uploader.upload(path.join(`${req.file.destination}/${req.file.filename}`))
-        :
-        undefined
+    let result;
+
+    if(req.file !== undefined) {
+        result = await cloudinary.v2.uploader.upload(path.join(`${req.file.destination}/${req.file.filename}`))
+    }
+    else {
+        result = null;
+    }
+
+    return result;
 }
