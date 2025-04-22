@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const cloudinary = require('cloudinary');
+const { resourceLimits } = require('worker_threads');
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -15,7 +16,7 @@ const storage = multer.diskStorage({
             cb(null, '../express-chatapp/public/profilepictures');
         }
         else if (file.fieldname === 'chat') {
-            cb(null, '../express-chatapp/public/chatmessages');
+            cb(null, '../express-chatapp/public/chatimages');
         }
     },
     filename: (req, file, cb) => {
@@ -26,14 +27,7 @@ const storage = multer.diskStorage({
 module.exports.upload = multer({storage: storage});
 
 module.exports.uploadImage = async (req) => {
-    let result;
-
-    if(req.file !== undefined) {
-        result = await cloudinary.v2.uploader.upload(path.join(`${req.file.destination}/${req.file.filename}`))
-    }
-    else {
-        result = null;
-    }
+    let result = await cloudinary.v2.uploader.upload(path.join(`${req.file.destination}/${req.file.filename}`));
 
     return result;
 }

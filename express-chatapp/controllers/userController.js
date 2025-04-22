@@ -149,8 +149,12 @@ exports.change_profile_picture = async (req, res) => {
         const user_key = await validateToken(req, res); 
 
         if(user_key) {
-            const result = await uploadImage(req);
-        
+            let result;
+
+            if(req.file) {
+                result = await uploadImage(req);
+            }
+            
             if(result) {
                 await db.query(
                     `UPDATE users SET profile_picture = $1 WHERE id = $2`, 

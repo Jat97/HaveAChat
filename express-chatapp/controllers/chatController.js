@@ -1,5 +1,5 @@
 const db = require(`../database/db`);
-const {upload} = require(`../database/imageupload.js`);
+const {uploadImage} = require(`../database/imageupload.js`);
 const {validateToken} = require(`../database/token`);
 
 exports.get_chats = async (req, res) => {
@@ -117,9 +117,15 @@ exports.get_user_messages = async (req, res) => {
 
 exports.send_message = async (req, res) => {
     try {
-        const user_key = await validateToken(req, res); 
+        const user_key = await validateToken(req, res);
 
         if(user_key) {
+            let result;
+
+            if(req.file !== undefined) {
+                result = await uploadImage(req); 
+            } 
+
             const receiving_user = await db.query(`SELECT * FROM users WHERE username = $1`, [req.params.username]);
             
             const user_chat = await db.query(`SELECT * FROM chats WHERE user1 = $1 AND user2 = $2`,
@@ -131,9 +137,16 @@ exports.send_message = async (req, res) => {
             );
 
             const message = await db.query(
-                `INSERT INTO messages (sending_user, receiving_user, text, sent, checked)
-                VALUES ($1, $2, $3, $4, $5) RETURNING *`, 
-                [user_key.user.rows[0].id, receiving_user.rows[0].id, req.body.text, new Date(Date.now()), false]
+                `INSERT INTO messages (sending_user, receiving_user, text, sent, checked, image)
+                VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`, 
+                [
+                    user_key.user.rows[0].id, 
+                    receiving_user.rows[0].id, 
+                    req.body.text, 
+                    new Date(Date.now()), 
+                    false, 
+                    !result ? null : result.secure_url
+                ]
             );
 
             await db.query(`UPDATE chats SET last_message_sent = $1 WHERE user1 = $2 AND user2 = $3`, 
@@ -149,11 +162,11 @@ exports.send_message = async (req, res) => {
                 await db.query(`INSERT INTO chat_requests (requesting_user, requested_user) VALUES ($1, $2)`, 
                     [user_key.user.rows[0].id, receiving_user.rows[0].id]
                 );
-
-                await db.query(`UPDATE chats SET last_message_sent = $1 WHERE id = $2`,
-                    [message.rows[0].id, partner_chat.rows[0].id]
-                );
             }
+            
+            await db.query(`UPDATE chats SET last_message_sent = $1 WHERE id = $2`,
+                [message.rows[0].id, partner_chat.rows[0].id]
+            );
             
             await db.query(`UPDATE chats SET last_message_sent = $1 WHERE id = $2`, 
                 [message.rows[0].id, user_chat.rows[0].id]
@@ -166,6 +179,7 @@ exports.send_message = async (req, res) => {
         }
     }
     catch (err) {
+        console.log(err, 'j');
         res.status(500).json({error: err});
     }  
 }
