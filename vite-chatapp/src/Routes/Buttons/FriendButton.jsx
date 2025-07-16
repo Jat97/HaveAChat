@@ -1,20 +1,16 @@
 import {useMutation} from '@tanstack/react-query';
 import {useChatStore} from '../../Context/ChatStore';
-import {queryClient} from '../../App';
-import {useFetchLogged} from '../Functions/FetchLogged';
+import {client} from './../../client';
 
 const FriendButton = (props) => {
-    const user = props.props[0];
-    const friends = props.props[1];
+    const user = props.props;
 
     const setSiteError = useChatStore((state) => state.setSiteError);
 
-    const logData = useFetchLogged(setSiteError);
-
     const friendMutation = useMutation({
         mutationFn: () => {
-            fetch(`http://localhost:9000/api/${user.username}/friend/toggle`, {
-                method: 'PUT',
+            fetch(`http://localhost:9000/api/${user.username}/unfriend`, {
+                method: 'DELETE',
                 credentials: 'include'
             })
             .then(res => {
@@ -27,8 +23,27 @@ const FriendButton = (props) => {
             })
             .catch(err => setSiteError(err.message))
         },
-        onSuccess: async () => {
-            return await queryClient.invalidateQueries({queryKey: ['friends']});
+        onMutate: async () => {
+            await client.cancelQueries({queryKey: ['friends']});
+
+            const friend_cache = client.getQueryData(['friends']);
+            const friendArr = friend_cache.friends || [];
+
+            client.setQueryData(['friends'], () => {
+                friendArr.forEach((friend, index) => {
+                    if(friend.id === user.id) {
+                        client.setQueryData(['blocked'], friendArr.splice(index, 1));
+                    }
+                });
+            });
+
+            return {friendArr}
+        },
+        onError: (err, data, context) => {
+            client.setQueryData(['friends'], context.friendArr);
+        },
+        onSettled: () => {
+            client.invalidateQueries(['friends']);
         }
     });
 
@@ -37,13 +52,11 @@ const FriendButton = (props) => {
     }
 
     return (
-        <button id={user.username} data-testid={user.username} type='button' onClick={() => toggleFriend()}>
-            {friends.some((friend) => friend.user1.id === logData.data.logged_user.id 
-                && friend.user2.id === user.id) === false ?
-                'Add friend'
-            :
-                'Remove friend'
-            }
+        <button id={user.username} data-testid={user.username} type='button' 
+            className='text-sm text-white font-semibold bg-red-300 rounded-full p-0.5 w-[100px] 
+            md:text-base md:w-[150px] active:bg-pink-200 hover:bg-pink-200' 
+            onClick={() => toggleFriend()}>
+            Remove
         </button>
     )
 }

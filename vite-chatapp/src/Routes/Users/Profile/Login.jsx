@@ -1,11 +1,13 @@
+import {useMutation} from '@tanstack/react-query'; 
 import {useChatStore} from '../../../Context/ChatStore';
 import {Link} from 'react-router-dom';
 import LogSign from '../../Inputs/LogSign';
-import PageError from '../../Errors/PageError';
+import LogSignHeading from '../../Miscellaneous/LogSignHeading';
+import InputError from '../../Errors/InputError';
 
 const Login = () => {
-    const usernameError = useChatStore((state) => state.usernameError);
-    const passwordError = useChatStore((state) => state.passwordError);
+    const username_error = useChatStore((state) => state.username_error);
+    const password_error = useChatStore((state) => state.password_error);
     const setSiteError = useChatStore((state) => state.setSiteError);
     const setUsernameError = useChatStore((state) => state.setUsernameError);
     const setPasswordError = useChatStore((state) => state.setPasswordError);
@@ -23,52 +25,61 @@ const Login = () => {
             })
         })
         .then(res => {
-            if(res.redirect) {
-                window.location = res.url.replace('9000', '3000');
+            if(res.redirected) {
+                window.location = res.url.replace('9000', '5173');
             }
             else if(res.ok === false) {
-                return res.json();
+                throw Error(`${res.status}: ${res.statusText}`);
             }
             else {
-                throw Error(`${res.status}: ${res.statusText}`);
+                return res.json();
             }
         })
         .then(json => {
-            setUsernameError(json.user_err !== undefined ? json.user_err : null);
-            setPasswordError(json.pass_err !== undefined ? json.pass_err : null);
+            console.log(json.user_err, !json.user_err);
+            setUsernameError(!json.user_err  ? null : json.user_err);
+            setPasswordError(!json.pass_err  ? null : json.pass_err);
         })
         .catch(err => setSiteError(err.message))
     }
 
     return (
-        <div>
-            <p> Log in and start chatting </p>
+        <div className='absolute top-[200px] flex flex-col items-center w-screen md:top-1/4 md:left-[400px] 
+            md:border md:border-zinc-400 md:shadow-sm md:shadow-slate-200 md:w-5/12'>
+            <LogSignHeading props={'Log in and start chatting'} />
             
-            <div>
-                <div>
-                    <LogSign props={'user'} />
+            <div className='flex flex-col items-center w-3/4 md:m-4 md:w-2/3'>
+                <div className='flex flex-col my-2 w-2/3 md:w-full'>
+                    <LogSign props={['user', username_error]} />
 
-                    {usernameError !== null ? 
-                        <PageError props={usernameError} />
+                    {username_error !== null ? 
+                        <InputError props={username_error} />
                     :
                         null
                     }
                 </div>
 
-                <div>
-                    <LogSign props={'password'} />
+                <div className='flex flex-col my-2 w-2/3 md:w-full'>
+                    <LogSign props={['password', password_error]} />
 
-                    {passwordError !== null ?
-                        <PageError props={passwordError} /> 
+                    {password_error !== null ?
+                        <InputError props={password_error} /> 
                     :
                         null
                     }
                 </div>
             </div>
 
-            <div>
-                <button type='button' onClick={() => logIn()}> Log in </button>
-                <p> Don't have an account? <Link to='/api/signup'> Create one! </Link> </p>
+            <div className='flex flex-col items-center my-4 md:my-0'>
+                <button type='button' className='cursor-pointer text-cyan-400 font-semibold bg-white border border-cyan-400 rounded-full
+                    my-2 w-1/2 md:text-white md:bg-cyan-400 md:w-1/2 hover:bg-cyan-200' 
+                    onClick={() => logIn()}> 
+                    Log in 
+                </button>
+
+                <p className='text-base my-4 md:text-sm'> Don't have an account? 
+                    <Link to='/api/signup' className='text-blue-500 hover:underline'> Create one! </Link> 
+                </p>
             </div>
         </div>
     )

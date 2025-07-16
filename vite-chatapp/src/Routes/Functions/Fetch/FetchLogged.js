@@ -1,9 +1,10 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchBlocked = (setSiteError) => {
-    const result = useQuery({queryKey: ['blocked'], 
+export const useFetchLogged = (setSiteError) => {
+    const result = useQuery({
+        queryKey: ['logged'], 
         queryFn: async () => {
-            return await fetch('http://localhost:9000/api/blocked', {
+            return await fetch('http://localhost:9000/api/user', {
                 method: 'GET',
                 credentials: 'include'
             })
@@ -16,7 +17,8 @@ export const useFetchBlocked = (setSiteError) => {
                 }
             })
             .catch(err => setSiteError(err.message))
-    }});
+        },
+    });
 
     return result;
 }

@@ -57,14 +57,15 @@ exports.create_account = [
                 else {
                     const user = await db.query(
                         `INSERT INTO users (username, email, password, dob, online, hidden, profile_picture, display_name) 
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                        RETURNING username, display_name, profile_picture, online, hidden`, 
                         [req.body.username, req.body.email, hashWord, req.body.dob, true, false, null, req.body.display]
                     );
 
                     jwt.sign({user, expiresIn: new Date(Date.now() + 1000000000)}, 
                         process.env.TOKEN_KEY, (err, key) => {
                         if(err) {
-                            res.json({err});
+                            res.status(400).json({err});
                         }
                         else {
                             return res.cookie('signtoken', key, {
@@ -82,9 +83,16 @@ exports.create_account = [
 ];
 
 exports.log_in = async (req, res) => {
-    const user = await db.query(`SELECT * FROM users WHERE username = $1 OR email = $1`, [req.body.user]);
-
-    console.log(user.rows.length);
+    const user = await db.query(`
+        SELECT username as username,
+        display_name as display_name,
+        profile_picture as profile_picture,
+        online as online,
+        hidden as hidden 
+        FROM users 
+        WHERE username = $1 OR email = $1`, 
+        [req.body.user]
+    );
 
     if(user.rows.length === 0) {
         res.json({user_err: 'This account does not exist.'});
@@ -95,7 +103,10 @@ exports.log_in = async (req, res) => {
                 res.json({err});
             }
             else if(result) {
-                jwt.sign({user, expiresIn: new Date(Date.now() + 1000000000)}, process.env.TOKEN_KEY, async (err, key) => {
+                const logged_user = user.rows[0];
+
+                jwt.sign({logged_user, expiresIn: new Date(Date.now() + 1000000000)}, process.env.TOKEN_KEY, 
+                    async (err, key) => {
                     if(err) {
                         res.json({err});
                     }
@@ -111,6 +122,9 @@ exports.log_in = async (req, res) => {
                     }
                 });
             }
+            else if(req.body.password.length === 0) {
+                res.json({pass_err: 'Please enter your password.'});
+            }
             else {
                 res.json({pass_err: 'Your password is incorrect.'});
             }
@@ -123,20 +137,30 @@ exports.user_index = async (req, res) => {
         const user_key = await validateToken(req, res);
 
         if(user_key) {
-            const users = await db.query(`SELECT * FROM users WHERE id != $1`, 
-                [user_key.user.rows[0].id]);
+            let users = await db.query(`
+                SELECT username as username,
+                display_name as display_name,
+                profile_picture as profile_picture,
+                online as online,
+                hidden as hidden 
+                FROM users 
+                WHERE id != $1`, 
+                [user_key.logged_user.id]
+            );
 
-            const blocked_users = await db.query(`SELECT * FROM blocked_users WHERE blocked_by = $1`, 
-                [user_key.user.rows[0].id]);
+            const blocked_users = await db.query(
+                `SELECT * FROM blocked_users WHERE blocked_by = $1`, 
+                [user_key.logged_user.id]
+            );
 
             if(blocked_users.rows.length > 0) {
-                users.rows.filter(user => blocked_users?.some((blocked) => blocked.id === user.id) === false); 
+                users.rows = users.rows.filter(user => blocked_users.rows.some((blocked) => blocked !== user.id)); 
             }
 
             res.status(200).json({users: users.rows});
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -158,7 +182,7 @@ exports.change_profile_picture = async (req, res) => {
             if(result) {
                 await db.query(
                     `UPDATE users SET profile_picture = $1 WHERE id = $2`, 
-                    [result.secure_url, user_key.user.rows[0].id]
+                    [result.secure_url, user_key.logged_user.id]
                 );
 
                 res.status(200).json({});
@@ -179,8 +203,14 @@ exports.get_friends = async (req, res) => {
 
         if(user_key) {
             const friends = await db.query(
-                `SELECT * FROM friends 
-                WHERE user1 = $1`, [user_key.user.rows[0].id]
+                `SELECT username as username,
+                display_name as display_name,
+                profile_picture as profile_picture,
+                online as online,
+                hidden as hidden
+                FROM friends 
+                WHERE user1 = $1`, 
+                [user_key.logged_user.id]
             );
 
             const users = await db.query(`SELECT * FROM users`);
@@ -212,16 +242,22 @@ exports.get_blocked_users = async (req, res) => {
 
         if(user_key) {
             const blocked_users = await db.query(`
-                SELECT * FROM blocked_users
-                WHERE blocked_by = $1`, [user_key.users.rows[0].id]
+                SELECT * FROM blocked_users WHERE blocked_by = $1`, [user_key.logged_user.id]
             );
 
-            const users = await db.query(`SELECT * FROM users`);
+            const users = await db.query(`
+                SELECT username as username,
+                display_name as display_name,
+                profile_picture as profile_picture,
+                online as online,
+                hidden as hidden 
+                FROM users`
+            );
 
             const blocklist = [];
 
-            blocked_users.forEach(blocked => {
-                users.forEach(user => {
+            blocked_users.rows.forEach(blocked => {
+                users.rows.forEach(user => {
                     if(blocked.blocked_user === user.id) {
                         blocklist.push(user);
                     }
@@ -231,7 +267,7 @@ exports.get_blocked_users = async (req, res) => {
             res.json({blocked_users: blocklist});
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -247,13 +283,14 @@ exports.remove_from_friendslist = async (req, res) => {
             await db.query(
                 `DELETE FROM friends 
                 JOIN users ON user.id = friends.user1.id
-                WHERE user1.id = $1 AND user2.username = $2`, [user_key.users.rows[0].id, req.params.username]
+                WHERE user1.id = $1 AND user2.username = $2`, 
+                [user_key.logged_user.id, req.params.username]
             );
             
             res.status(200).json({});
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -266,44 +303,49 @@ exports.toggle_block_users = async (req, res) => {
         const user_key = await validateToken(req, res);
 
         if(user_key) {
+            const user = await db.query(`SELECT * FROM users WHERE username = $1`, [req.params.username]);
+
             const blocked_user = await db.query(
-                `SELECT blocked_user FROM blocked_users 
-                JOIN users ON user.id = blocked_users.blocked_by.id
-                WHERE blocked_user.username = $1`, [req.params.username]
+                `SELECT * FROM blocked_users 
+                WHERE blocked_user = $1`, 
+                [user.rows[0].id]
             );
 
             if(blocked_user.rows.length > 0) {
                 await db.query(
                     `DELETE FROM blocked_users 
-                    JOIN users ON user.id = blocked_users.blocking_user.id
-                    WHERE blocked_user.username = $1 AND blocked_by.id = $2`, 
-                    [req.params.username, user_key.users.rows[0].id] 
+                    WHERE blocked_user = $1 AND blocked_by = $2`, 
+                    [user.rows[0].id, user_key.logged_user.id] 
                 );
             }
             else {
-                const user = await db.query(`SELECT * FROM users WHERE username = $1`, [req.params.username]);
-
                 await db.query(
                     `INSERT INTO blocked_users (blocked_user, blocked_by) VALUES ($1, $2)`, 
-                    [user.rows[0], user_key.users.rows[0]]
+                    [user.rows[0].id, user_key.logged_user.id]
                 );
 
                 await db.query(
                     `DELETE FROM chats WHERE (user1 = $1 AND user2 = $2) OR (user1 = $2 AND user2 = $1)`, 
-                    [user_key.user.rows[0].id, user.rows[0].id]
+                    [user_key.logged_user.id, user.rows[0].id]
                 );
 
                 await db.query(
                     `DELETE FROM messages WHERE (sending_user = $1 AND receiving_user = $2) 
                     OR (sending_user = $2 AND receiving_user = $1)`, 
-                    [user_key.user.rows[0].id, user.rows[0].id]
+                    [user_key.logged_user.id, user.rows[0].id]
+                );
+
+                await db.query(
+                    `DELETE FROM chat_messages WHERE (requesting_user = $1 AND requested_user = $2) 
+                    OR (requesting_user = $2 AND requested_user = $1)`
+                    [user_key.logged_user.id, user.rows[0].id]
                 );
             }
 
-            res.status(200).json({blocked_user});
+            res.status(200);
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -311,21 +353,21 @@ exports.toggle_block_users = async (req, res) => {
     }
 };
 
-exports.toggle_online_status = async (req, res) => {
+exports.toggle_hidden_status = async (req, res) => {
     try {
         const user_key = validateToken(req, res);
 
         if(user_key) {
-            
-            await db.query(`UPDATE users SET online = $1 AND hidden = $2 WHERE id = $3`, 
-                [user_key.user.rows[0].online ? false : true, user_key.user.rows[0].hidden ? false : true, 
-                    user_key.user.rows[0].id]);
+            await db.query(`
+                UPDATE users SET hidden = $1 WHERE id = $2`, 
+                [user_key.logged_user.hidden ? false : true, user_key.logged_user.id]
+            );
             
             res.status(200).json({});
            
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -341,13 +383,20 @@ exports.search_users = async (req, res) => {
             const search_query = `%${req.query.query}%`;
 
             const search_results = await db.query(
-                `SELECT * FROM users WHERE username LIKE $1 OR display_name LIKE $1`, [search_query]
+                `SELECT username as username,
+                display_name as display_name,
+                profile_picture as profile_picture,
+                online as online,
+                hidden as hidden  
+                FROM users 
+                WHERE username LIKE $1 OR display_name LIKE $1`, 
+                [search_query]
             );
 
             res.json({users: search_results.rows}); 
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -360,12 +409,12 @@ exports.delete_account = async (req, res) => {
         const user_key = await validateToken(req, res);
 
         if(user_key) {
-            await db.query(`DELETE FROM users WHERE = $1`, [user_key.users.rows[0].id]);
+            await db.query(`DELETE FROM users WHERE = $1`, [user_key.logged_user.id]);
 
             res.status(200).json({});
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -378,10 +427,10 @@ exports.get_logged_data = async (req, res) => {
         const user_key = await validateToken(req, res);
 
         if(user_key) {
-            res.json({logged_user: user_key.user.rows[0]});
+            res.json({logged_user: user_key.logged_user});
         }
         else {
-            res.status(403).json({});
+            res.status(401).json({});
         }
     }
     catch (err) {
@@ -394,13 +443,13 @@ exports.log_out = async (req, res) => {
       const user_key = await validateToken(req, res);  
 
       if(user_key) {
-        await db.query(`UPDATE users SET online = $1 WHERE id = $2`, [false, user_key.user.rows[0].id]);
+        await db.query(`UPDATE users SET online = $1 WHERE id = $2`, [false, user_key.logged_user.id]);
 
         res.clearCookie(req.cookies.usertoken ? 'usertoken' : 'signtoken', {domain: 'localhost', path: '/api'})
             .redirect(303, '/api/login');
       }
       else {
-        res.status(403).json({});
+        res.status(401).json({});
       }
     }
     catch (err) {

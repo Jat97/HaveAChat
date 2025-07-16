@@ -7,7 +7,7 @@ import {BrowserRouter, MemoryRouter, Routes, Route} from 'react-router-dom';
 import Signup from '../../../Routes/Users/Profile/Signup';
 import Chats from '../../../Routes/Chats/Chats';
 import {useChatStore} from '../../../Context/ChatStore';
-import { useFetchChats } from '../../../Routes/Functions/FetchChats';
+import { useFetchChats } from '../../../Routes/Functions/Fetch/FetchChats';
 expect.extend(matchers);
 
 test('Create account, show empty chats', async () => {
@@ -20,8 +20,6 @@ test('Create account, show empty chats', async () => {
             </MemoryRouter>
         </QueryClientProvider>
     )
-    
-    console.log(window.location.href, 'JDSKJSDLKJDFLKJ09908')
        
     await user.type(screen.getByTestId('username'), 'TestUser');
     await user.type(screen.getByTestId('name'), 'Test User');

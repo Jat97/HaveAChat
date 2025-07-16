@@ -5,7 +5,7 @@ import * as matchers from '@testing-library/jest-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter, MemoryRouter, Routes, Route} from 'react-router-dom';
 import {useChatStore} from '../../../Context/ChatStore';
-import {useFetchChats} from '../../../Routes/Functions/FetchChats';
+import {useFetchChats} from '../../../Routes/Functions/Fetch/FetchChats';
 import Login from '../../../Routes/Users/Profile/Login';
 import Chats from '../../../Routes/Chats/Chats';
 expect.extend(matchers);
@@ -45,10 +45,10 @@ test('Log in, then show chats', async () => {
         expect(chatData.result.current.isSuccess).toBe(true);
     });
 
-    expect(chatData.result.current.data.chats.length).toBe(2);
+    expect(chatData.result.current.data.chats.length).toBe(3);
     
     chatData.result.current.data.chats.forEach(chat => {
-        const user = screen.getByText(chat.user2.display_name);
+        const user = screen.getByTestId(chat.user2.username);
         expect(user).toBeInTheDocument();
     });     
 });

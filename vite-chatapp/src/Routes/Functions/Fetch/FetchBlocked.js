@@ -1,10 +1,9 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchMessages = ([username, setSiteError]) => {
-    const result = useQuery({
-        queryKey: ['messages'],
+export const useFetchBlocked = (setSiteError) => {
+    const result = useQuery({queryKey: ['blocked'], 
         queryFn: async () => {
-            return await fetch(`http://localhost:9000/api/${username}/chat`, {
+            return await fetch('http://localhost:9000/api/blocked', {
                 method: 'GET',
                 credentials: 'include'
             })
@@ -17,7 +16,13 @@ export const useFetchMessages = ([username, setSiteError]) => {
                 }
             })
             .catch(err => setSiteError(err.message))
-    }});
+        },
+        queryOptions: {
+            retry: false,
+            staleTime: 1000 * 60,
+            refetchInterval: 10000
+        }
+    });
 
     return result;
 }

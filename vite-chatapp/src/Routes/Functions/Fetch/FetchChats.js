@@ -1,14 +1,14 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchLogged = (setSiteError) => {
+export const useFetchChats = (setSiteError) => {
     const result = useQuery({
-        queryKey: ['logged'], 
+        queryKey: ['chats'], 
         queryFn: async () => {
-            return await fetch('http://localhost:9000/api/user', {
+            return await fetch('http://localhost:9000/api/chats', {
                 method: 'GET',
                 credentials: 'include'
             })
-            .then(res => {
+            .then(res => { 
                 if(res.ok === false) {
                     throw Error(`${res.status}: ${res.statusText}`);
                 }
@@ -17,7 +17,11 @@ export const useFetchLogged = (setSiteError) => {
                 }
             })
             .catch(err => setSiteError(err.message))
-    }});
+        },
+        retry: false,
+        staleTime: 1000 * 60,
+        refetchInterval: 10000
+    });
 
     return result;
 }

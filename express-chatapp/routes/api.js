@@ -12,21 +12,23 @@ router.post('/login', userController.log_in);
 
 router.get('/users', userController.user_index);
 
-router.put('/profile/picture', upload.single('profile'), userController.change_profile_picture);
+router.patch('/profile/picture', upload.single('profilepicture'), userController.change_profile_picture);
 
 router.get('/friends', userController.get_friends);
 
 router.get('/blocked', userController.get_blocked_users);
 
-router.put('/:username/friend/remove', userController.remove_from_friendslist);
+router.delete('/unfriend/:username', userController.remove_from_friendslist);
 
-router.put('/:username/block/toggle', userController.toggle_block_users);
+router.post('/block/:username', userController.toggle_block_users);
 
-router.put('/user/online/toggle', userController.toggle_online_status);
+router.delete('/unblock/:username', userController.toggle_block_users);
+
+router.patch('/user/hidden/toggle', userController.toggle_hidden_status);
 
 router.get('/search?:query', userController.search_users);
 
-router.delete('/user/delete', userController.delete_account);
+router.delete('/user', userController.delete_account);
 
 router.get('/user', userController.get_logged_data);
 
@@ -36,14 +38,12 @@ router.put('/user/logout', userController.log_out);
 
 router.get('/chats', chatController.get_chats);
 
-router.put('/:username/chat/initiate', chatController.initiate_chat);
-
 router.get('/:username/chat', chatController.get_user_messages);
 
-router.put('/:username/message', upload.single('chat'), chatController.send_message);
+router.post('/:username/message', upload.single('chatimage'), chatController.send_message);
 
 router.put('/chat/:requestid/request/handle', chatController.handle_chat_request);
 
-router.delete('/:chatid/chat/delete', chatController.delete_chat);
+router.delete('/:chatid/chat', chatController.delete_chat);
 
 module.exports = router;

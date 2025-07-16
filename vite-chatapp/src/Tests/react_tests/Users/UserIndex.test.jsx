@@ -5,18 +5,21 @@ import * as matchers from '@testing-library/jest-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter, MemoryRouter, Routes, Route} from 'react-router-dom';
 import {useChatStore} from '../../../Context/ChatStore';
-import {useFetchBlocked} from '../../../Routes/Functions/FetchBlocked';
-import {useFetchFriends} from '../../../Routes/Functions/FetchFriends';
-import {useFetchUsers} from '../../../Routes/Functions/FetchUsers';
-import {useFetchLogged} from '../../../Routes/Functions/FetchLogged';
+import {useFetchBlocked} from '../../../Routes/Functions/Fetch/FetchBlocked';
+import {useFetchFriends} from '../../../Routes/Functions/Fetch/FetchFriends';
+import {useFetchUsers} from '../../../Routes/Functions/Fetch/FetchUsers';
+import {useFetchLogged} from '../../../Routes/Functions/Fetch/FetchLogged';
 import UserIndex from '../../../Routes/Users/UserIndex';
 import Chats from '../../../Routes/Chats/Chats';
+import SearchTab from '../../../Routes/Inputs/Search/SearchTab';
+import {useFetchChats} from '../../../Routes/Functions/Fetch/FetchChats';
+import { act } from 'react';
 expect.extend(matchers);
 
 test('View user index', async () => {
     const mockStore = renderHook(() => useChatStore(), {wrapper});
 
-    const userData = renderHook(() => useFetchUsers(null, mockStore.result.current.setSiteError), {wrapper});
+    const userData = renderHook(() => useFetchUsers(mockStore.result.current.setSiteError), {wrapper});
     await waitFor(() => expect(userData.result.current.isSuccess).toBe(true));
 
     render (
@@ -30,20 +33,22 @@ test('View user index', async () => {
     )
     
     userData.result.current.data.users.slice(1, 2).forEach(user => {
-        const account = screen.getByText(user.username);
+        const account = screen.getByText(user.display_name);
         expect(account).toBeInTheDocument();
     });
 
-    expect(userData.result.current.data.users.length - 1).toBe(2);
+    expect(userData.result.current.data.users.length).toBe(4);
 });
 
 test('View friends', async () => {
     const mockStore = renderHook(() => useChatStore(), {wrapper});
 
     const logData = renderHook(() => useFetchLogged(mockStore.result.current.setSiteError), {wrapper});
-    const friendData = renderHook(() => useFetchFriends(undefined), {wrapper});
+    const friendData = renderHook(() => useFetchFriends(mockStore.result.current.setSiteError), {wrapper});
+
     await waitFor(() => expect(logData.result.current.isSuccess).toBe(true));
     await waitFor(() => expect(friendData.result.current.isSuccess).toBe(true));
+
     expect(friendData.result.current.data.friends.length).toBe(2);
 
     render (
@@ -58,17 +63,17 @@ test('View friends', async () => {
 
     for(const friend of friendData.result.current.data.friends) {
         await waitFor(() => {
-            const user = screen.getByText(friend.user2.display_name);
+            const user = screen.getByText(friend.display_name);
             expect(user).toBeInTheDocument();
         });
     }
 
-    const friend_button = screen.getByTestId(friendData.result.current.data.friends[0].user2.username);
+    const friend_button = screen.getByTestId(friendData.result.current.data.friends[0].username);
     expect(friend_button).toBeInTheDocument();
 
     const remove_friend = vi.fn((e) => { 
         return friendData.result.current.data.friends.forEach((friend, index) => {
-            if(friend.user2.username === e.target.id) {
+            if(friend.username === e.target.id) {
                 friendData.result.current.data.friends.splice(index, 1);  
             }
         });
@@ -101,14 +106,16 @@ test('View blocked user, then unblock them', async () => {
     )
 
     expect(blockData.result.current.data.blocked_users.length).toBe(1);
-    const blocked_user = screen.getByText(blockData.result.current.data.blocked_users[0].blocked_user.display_name);
+    const blocked_user = screen.getByText(blockData.result.current.data.blocked_users[0].display_name);
     expect(blocked_user).toBeInTheDocument();
 
-    const block_button = screen.getByTestId(blockData.result.current.data.blocked_users[0].blocked_user.username);
+    const block_button = screen.getByTestId(blockData.result.current.data.blocked_users[0].username);
     expect(block_button).toBeInTheDocument();
     
     const unblock = vi.fn(() => {
-        return blockData.result.current.data.blocked_users.splice(0, 1);
+        act(() => {
+           return blockData.result.current.data.blocked_users.splice(0, 1); 
+        })
     });
 
     block_button.onclick = unblock;
@@ -116,42 +123,4 @@ test('View blocked user, then unblock them', async () => {
 
     expect(unblock).toHaveBeenCalledTimes(1);
     expect(blockData.result.current.data.blocked_users.length).toBe(0);
-});
-
-test('Search for a user', async () => { 
-    const {unmount} = render(
-        <QueryClientProvider client={client}>
-            <BrowserRouter>
-                <Chats />
-            </BrowserRouter>
-        </QueryClientProvider>
-    )
-
-    const search = screen.getByRole('searchbox');
-    await user.type(search, 'Jude');
-    const search_button = screen.getByTestId('search');
-
-    const form = search_button.closest('form');
-    fireEvent.submit(form); 
-
-    unmount();
-
-    const mockStore = renderHook(() => useChatStore(), {wrapper});
-
-    const userData = renderHook(() => useFetchUsers('?query=Jude', mockStore.result.current.setSiteError), {wrapper});
-    await waitFor(() => expect(userData.result.current.isSuccess).toBe(true));
-    expect(userData.result.current.data.users.length).toBeGreaterThan(0);
-
-    render(
-        <QueryClientProvider client={client}>
-            <MemoryRouter initialEntries={['/api/search?query=Jude']}>
-                <Routes>
-                    <Route path='/api/search' element={<UserIndex />}></Route>
-                </Routes>
-            </MemoryRouter>
-        </QueryClientProvider>
-    )    
-        
-    const searched_user = await screen.findByText(userData.result.current.data.users[0].display_name);  
-    expect(searched_user).toBeInTheDocument();   
 });

@@ -1,15 +1,14 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchChats = (setSiteError) => {
+export const useFetchMessages = (username, setSiteError) => {
     const result = useQuery({
-        queryKey: ['chats'], 
+        queryKey: ['messages', username],
         queryFn: async () => {
-            return await fetch('http://localhost:9000/api/chats', {
+            return await fetch(`http://localhost:9000/api/${username}/chat`, {
                 method: 'GET',
                 credentials: 'include'
             })
-            .then(res => { 
-                console.log(res)
+            .then(res => {
                 if(res.ok === false) {
                     throw Error(`${res.status}: ${res.statusText}`);
                 }
@@ -17,8 +16,9 @@ export const useFetchChats = (setSiteError) => {
                     return res.json();
                 }
             })
-            .catch(err => setSiteError(err.message))
-        }
+            .catch(err => {console.log(err), setSiteError(err.message)})
+        },
+        enabled: !!username
     });
 
     return result;

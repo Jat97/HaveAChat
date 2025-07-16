@@ -1,23 +1,18 @@
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
-import {QueryClient} from '@tanstack/react-query';
-import {chatStore} from './Context/ChatStore';
+import {BrowserRouter, Navigate, Routes, Route} from 'react-router-dom';
+import {useChatStore} from './Context/ChatStore';
 import Login from './Routes/Users/Profile/Login';
 import Signup from './Routes/Users/Profile/Signup';
-import Account from './Routes/Users/Profile/Account';
+import Account from './Routes/Users/Profile/AccountTab';
 import UserIndex from './Routes/Users/UserIndex';
 import Chats from './Routes/Chats/Chats';
-import UserChat from './Routes/Chats/UserChat';
 import PageError from './Routes/Errors/PageError';
 
-export const queryClient = new QueryClient();
-
-export const App = () => {
-    const {siteError} = ((state) => ({
-      siteError: state.siteError  
-    }));
+const App = () => {
+    const site_error = useChatStore((state) => state.site_error);
+    const account_tab = useChatStore((state) => state.account_tab);
 
     return (
-        <div>
+        <div className={`${account_tab ? 'bg-slate-200/50' : ''}`}>
             <BrowserRouter>
                 <Routes>
                     <Route path='/api/login' element={<Login />}></Route>
@@ -28,14 +23,15 @@ export const App = () => {
                     <Route path='/api/friends' element={<UserIndex />}></Route>
                     <Route path='/api/blocked' element={<UserIndex />}></Route>
                     <Route path='/api/chats' element={<Chats />}></Route>
-                    <Route path='/api/:username/chat' element={<UserChat />}></Route>
+                    <Route path='/api/:username/chat' element={<Chats />}></Route>
+                    <Route path='*' element={<Navigate to='/api/login' />}></Route>
                 </Routes>
             </BrowserRouter>
 
-            {siteError === null ?
+            {site_error === null ?
                 null
             :
-                <PageError props={siteError} />
+                <PageError props={site_error} />
             }
         </div>
     )

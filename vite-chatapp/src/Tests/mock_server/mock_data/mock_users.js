@@ -7,6 +7,7 @@ export const users = {
             email: 'FirstEmail@random.com',
             dob: '01/07/1997',
             online: true,
+            hidden: false,
             profile_picture: null,
             display_name: 'Jase'
         },
@@ -17,6 +18,7 @@ export const users = {
             email: 'SecondEmail@random.com',
             dob: '05/30/1994',
             online: true,
+            hidden: false,
             profile_picture: null,
             display_name: 'Jude'
         },
@@ -27,6 +29,7 @@ export const users = {
             email: 'ThirdEmail@random.com',
             dob: '09/14/2001',
             online: false,
+            hidden: false,
             profile_picture: null,
             display_name: 'SomeDude'
         },
@@ -37,8 +40,20 @@ export const users = {
             email: 'BlockedUser@blocked.com',
             dob: '08/16/1984',
             online: false,
+            hidden: false,
             profile_picture: null,
             display_name: 'Blocky'
+        },
+        {
+            id: '5',
+            username: 'Request4U',
+            password: 'fjsdkfjk;sadjk;191039184932LSKDLJFKLDSJFKE',
+            email: 'plzaccept@request.com',
+            dob: '11/12/1991',
+            online: false,
+            hidden: false,
+            profile_picture: null,
+            display_name: 'Requesty'
         }
     ]
 }

@@ -1,7 +1,7 @@
 import {http, HttpResponse} from 'msw';
 import {users} from './mock_data/mock_users'
 import {chats} from './mock_data/mock_chats';
-import {messages} from './mock_data/mock_messages';
+import {messages, requests} from './mock_data/mock_messages';
 
 const getResponse = (property, data) => {
     return HttpResponse.json({[property] : data});
@@ -38,12 +38,10 @@ export const requests = [
         return getResponse('logged_user', users.rows[0]);
     }),
 
-    http.get('http://localhost:9000/api/index', ({cookies}) => {
+    http.get('http://localhost:9000/api/users', ({cookies}) => {
         if(!cookies.usertoken) {
             return blockRequest(); 
         }
-
-        console.log(cookies);
 
         const user_list = users.rows.filter(user => user.id !== users.rows[0].id); 
 
@@ -51,12 +49,9 @@ export const requests = [
     }),
 
     http.get('http://localhost:9000/api/chats', ({cookies}) => {
-        console.log(cookies);
         if(cookies.usertoken === undefined && cookies.signtoken === undefined) {
             return blockRequest(); 
         }
-
-        console.log(cookies.signtoken);
 
         if(cookies.signtoken !== undefined) {
             chats.rows = [];
@@ -65,14 +60,19 @@ export const requests = [
         return getResponse('chats', chats.rows);
     }),
 
-    http.get('http://localhost:9000/api/:username/chat', ({cookies}) => {
+    http.get('http://localhost:9000/api/:username/chat', ({cookies, params}) => {
         if(!cookies.usertoken) {
             return blockRequest(); 
         }
+        
+        const {username} = params; 
 
-        const chat_messages = messages.rows.filter(message => message.receiving_user.id !== users.rows[0].id);
+        const messages_and_requests = {
+            messages: messages.rows,
+            request: username !== 'Request4U' ? null : requests.rows[0]
+        } 
 
-        return getResponse('messages', chat_messages);
+        return HttpResponse.json(messages_and_requests);
     }),
 
     http.get('http://localhost:9000/api/friends', ({cookies}) => {
@@ -82,14 +82,8 @@ export const requests = [
 
         const friends = {
             rows: [
-                {
-                    user1: users.rows[0],
-                    user2: users.rows[1]
-                },
-                {
-                    user1: users.rows[0],
-                    user2: users.rows[2]
-                }
+                users.rows[1],
+                users.rows[2]
             ]
         }
 
@@ -110,12 +104,7 @@ export const requests = [
         }
 
         const blocked = {
-            rows: [
-                {
-                    blocked_user: users.rows[3],
-                    blocked_by: users.rows[0]
-                }
-            ]
+            rows: [users.rows[3]]
         }
 
         return getResponse('blocked_users', blocked.rows);

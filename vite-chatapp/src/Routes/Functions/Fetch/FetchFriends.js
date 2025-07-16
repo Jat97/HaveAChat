@@ -1,10 +1,10 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchUsers = (query, setSiteError) => {
+export const useFetchFriends = (setSiteError) => {
     const result = useQuery({
-        queryKey: ['users'], 
+        queryKey: ['friends'], 
         queryFn: async () => {
-            return await fetch(`http://localhost:9000/api/${query === null ? 'index' : `search${query}`}`, {
+            return await fetch('http://localhost:9000/api/friends', {
                 method: 'GET',
                 credentials: 'include'
             })
@@ -16,8 +16,12 @@ export const useFetchUsers = (query, setSiteError) => {
                     return res.json();
                 }
             })
-            .catch(err => setSiteError(err.message))
-    }});
+            .catch(err => {console.log(err), setSiteError(err.message)})
+        },
+        retry: false,
+        staleTime: 1000 * 60,
+        refetchInterval: 10000
+    });
 
     return result;
-}
+};
