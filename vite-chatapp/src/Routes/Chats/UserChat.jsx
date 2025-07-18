@@ -6,7 +6,6 @@ import {useChatStore} from '../../Context/ChatStore';
 import {client} from './../../client';
 import {useFetchLogged} from '../Functions/Fetch/FetchLogged';
 import {useFetchMessages} from '../Functions/Fetch/FetchMessages';
-import {useFetchUsers} from '../Functions/Fetch/FetchUsers';
 import UserDisplay from '../Users/UserDisplay';
 import Message from './Message';
 import ChatReturn from '../Buttons/ChatReturn';
@@ -20,11 +19,13 @@ const UserChat = (props) => {
     const [image, setImage] = useState({file: null, reader: null});
 
     const mobileView = useChatStore((state) => state.mobileView);
+    const unauthorized = useChatStore((state) => state.unauthorized);
+    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
     const setSelectedChat = useChatStore((state) => state.setSelectedChat);
 
-    const logData = useFetchLogged(setSiteError);
-    const messageData = useFetchMessages(user?.username, setSiteError);
+    const logData = useFetchLogged([unauthorized, setUnauthorized, setSiteError]);
+    const messageData = useFetchMessages([user?.username, unauthorized, setUnauthorized, setSiteError]);
 
     const addFile = () => {
         const file = document.querySelector('#message_file');

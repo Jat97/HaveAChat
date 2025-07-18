@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchChats = (setSiteError) => {
+export const useFetchChats = ([unauthorized, setUnauthorized, setSiteError]) => {
     const result = useQuery({
         queryKey: ['chats'], 
         queryFn: async () => {
@@ -9,18 +9,27 @@ export const useFetchChats = (setSiteError) => {
                 credentials: 'include'
             })
             .then(res => { 
-                if(res.ok === false) {
+                if(res.status === 401) {
+                    setUnauthorized(true);
+                } 
+                else if(res.ok === false) {
                     throw Error(`${res.status}: ${res.statusText}`);
                 }
                 else {
+                    if(unauthorized) {
+                        setUnauthorized(false);
+                    }
+
                     return res.json();
                 }
             })
             .catch(err => setSiteError(err.message))
         },
-        retry: false,
-        staleTime: 1000 * 60,
-        refetchInterval: 10000
+        queryOptions: {
+            retry: false,
+            staleTime: 1000 * 60,
+            refetchInterval: 10000
+        }
     });
 
     return result;

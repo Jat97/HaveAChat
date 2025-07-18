@@ -2,6 +2,7 @@ import {create} from 'zustand';
 
 export const useChatStore = create((set) => ({
     site_error: null,
+    unauthorized: false,
     username_error: null,
     password_error: null,
     account_tab: false,
@@ -9,6 +10,7 @@ export const useChatStore = create((set) => ({
     selected_chat: null,
     mobileView: window.innerWidth < 768,
     setSiteError: (error) => set(() => ({siteError: error})),
+    setUnauthorized: (bool) => set(() => ({unauthorized: bool})),
     setUsernameError: (error) => set(() => ({username_error: error})),
     setPasswordError: (error) => set(() => ({password_error: error})),
     setAccountTab: () => set((state) => ({account_tab: state.account_tab ? false : true})),

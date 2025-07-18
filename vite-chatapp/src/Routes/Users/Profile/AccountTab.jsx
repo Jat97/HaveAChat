@@ -9,9 +9,11 @@ import {client} from '../../../client';
 const AccountTab = (props) => {
     const toggleTab = props.props;
 
+    const unauthorized = useChatStore((state) => state.unauthorized);
+    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
 
-    const logData = useFetchLogged(setSiteError);
+    const logData = useFetchLogged([unauthorized, setUnauthorized, setSiteError]);
 
     const userOnlineMutation = useMutation({
         mutationFn: () => {

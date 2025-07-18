@@ -16,16 +16,18 @@ const UserIndex = () => {
     const [data, setData] = useState(); 
 
     const account_tab = useChatStore((state) => state.account_tab);
+    const unauthorized = useChatStore((state) => state.unauthorized);
     const setAccountTab = useChatStore((state) => state.setAccountTab);
+    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
 
     const location = useLocation();
 
-    const userData = location.pathname.includes('index') ? useFetchUsers(setSiteError) : undefined;
+    const userData = location.pathname.includes('index') ? useFetchUsers([unauthorized, setUnauthorized, setSiteError]) : undefined;
 
-    const friendData = location.pathname.includes('friends') ? useFetchFriends(setSiteError) : undefined;
+    const friendData = location.pathname.includes('friends') ? useFetchFriends([unauthorized, setUnauthorized, setSiteError]) : undefined;
     
-    const blockedData = location.pathname.includes('blocked') ? useFetchBlocked(setSiteError) : undefined;
+    const blockedData = location.pathname.includes('blocked') ? useFetchBlocked([unauthorized, setUnauthorized, setSiteError]) : undefined;
 
     useEffect(() => {
         if(userData?.isSuccess) {

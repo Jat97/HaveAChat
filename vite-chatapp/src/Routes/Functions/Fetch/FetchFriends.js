@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchFriends = (setSiteError) => {
+export const useFetchFriends = ([unauthorized, setUnauthorized, setSiteError]) => {
     const result = useQuery({
         queryKey: ['friends'], 
         queryFn: async () => {
@@ -9,18 +9,27 @@ export const useFetchFriends = (setSiteError) => {
                 credentials: 'include'
             })
             .then(res => {
+                if(res.status === 401) {
+                    setUnauthorized(true);
+                }
                 if(res.ok === false) {
                     throw Error(`${res.status}: ${res.statusText}`);
                 }
                 else {
+                    if(unauthorized) {
+                        setUnauthorized(false);
+                    }
+
                     return res.json();
                 }
             })
-            .catch(err => {console.log(err), setSiteError(err.message)})
+            .catch(err => setSiteError(err.message))
         },
-        retry: false,
-        staleTime: 1000 * 60,
-        refetchInterval: 10000
+        queryOptions: {
+            retry: false,
+            staleTime: 1000 * 60,
+            refetchInterval: 10000
+        }
     });
 
     return result;

@@ -6,10 +6,12 @@ import Account from './Routes/Users/Profile/AccountTab';
 import UserIndex from './Routes/Users/UserIndex';
 import Chats from './Routes/Chats/Chats';
 import PageError from './Routes/Errors/PageError';
+import Unauthorized from './Routes/Miscellaneous/Popups/Unauthorized';
 
 const App = () => {
     const site_error = useChatStore((state) => state.site_error);
     const account_tab = useChatStore((state) => state.account_tab);
+    const unauthorized = useChatStore((state) => state.unauthorized);
 
     return (
         <div className={`${account_tab ? 'bg-slate-200/50' : ''}`}>
@@ -28,10 +30,12 @@ const App = () => {
                 </Routes>
             </BrowserRouter>
 
-            {site_error === null ?
-                null
-            :
+            {site_error === null &&
                 <PageError props={site_error} />
+            }
+
+            {unauthorized && 
+                <Unauthorized />
             }
         </div>
     )

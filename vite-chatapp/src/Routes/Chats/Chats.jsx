@@ -1,16 +1,14 @@
 import {useState, useEffect} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {useMutation} from '@tanstack/react-query';
-import {Bars4Icon, ChatBubbleLeftRightIcon, EllipsisHorizontalIcon, ExclamationCircleIcon, TrashIcon, UserIcon} from '@heroicons/react/24/solid';
+import {ChatBubbleLeftRightIcon, EllipsisHorizontalIcon, ExclamationCircleIcon, TrashIcon, UserIcon} from '@heroicons/react/24/solid';
 import {client} from './../../client';
 import {useChatStore} from '../../Context/ChatStore';
 import {useFetchChats} from '../Functions/Fetch/FetchChats';
-import {useFetchMessages} from '../Functions/Fetch/FetchMessages';
 import {useFetchUsers} from '../Functions/Fetch/FetchUsers';
 import {useFetchBlocked} from '../Functions/Fetch/FetchBlocked';
 import dayjs from 'dayjs';
 import UserDisplay from '../Users/UserDisplay';
-import Account from '../Users/Profile/AccountTab';
 import Search from '../Inputs/Search/Search';
 import SearchTab from '../Inputs/Search/SearchTab';
 import UserChat from './UserChat';
@@ -27,12 +25,14 @@ const Chats = () => {
     const setChatSearch = useChatStore((state) => state.setChatSearch);
     const account_tab = useChatStore((state) => state.account_tab);
     const setAccountTab = useChatStore((state) => state.setAccountTab);
+    const unauthorized = useChatStore((state) => state.unauthorized);
+    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
     const mobileView = useChatStore((state) => state.mobileView);
 
-    const chatData = useFetchChats(setSiteError);
-    const userData = useFetchUsers(setSiteError);
-    const blockData = useFetchBlocked(setSiteError);
+    const chatData = useFetchChats([unauthorized, setUnauthorized, setSiteError]);
+    const userData = useFetchUsers([unauthorized, setUnauthorized, setSiteError]);
+    const blockData = useFetchBlocked([unauthorized, setUnauthorized, setSiteError]);
 
     const navigate = useNavigate();
     

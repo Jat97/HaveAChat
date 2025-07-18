@@ -5,9 +5,11 @@ import {useChatStore} from '../../Context/ChatStore';
 import {useFetchLogged} from '../Functions/Fetch/FetchLogged';
 
 const UserDisplay = (props) => { 
+    const unauthorized = useChatStore((state) => state.unauthorized);
+    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
 
-    const logData = useFetchLogged(setSiteError);
+    const logData = useFetchLogged([unauthorized, setUnauthorized, setSiteError]);
     
     const user = props.props[0] === undefined ? logData.data?.logged_user : props.props[0];
     const is_logged_user = props.props[1];

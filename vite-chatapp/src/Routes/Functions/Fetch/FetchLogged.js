@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchLogged = (setSiteError) => {
+export const useFetchLogged = (unauthorized, setUnauthorized, setSiteError) => {
     const result = useQuery({
         queryKey: ['logged'], 
         queryFn: async () => {
@@ -9,10 +9,17 @@ export const useFetchLogged = (setSiteError) => {
                 credentials: 'include'
             })
             .then(res => {
-                if(res.ok === false) {
+                if(res.status === 401) {
+                    setUnauthorized(true);
+                }
+                else if(res.ok === false) {
                     throw Error(`${res.status}: ${res.statusText}`);
                 }
                 else {
+                    if(unauthorized) {
+                        setUnauthorized(false);
+                    }
+                    
                     return res.json();
                 }
             })

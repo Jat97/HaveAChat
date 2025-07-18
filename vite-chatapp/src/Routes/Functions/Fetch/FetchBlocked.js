@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 
-export const useFetchBlocked = (setSiteError) => {
+export const useFetchBlocked = ([unauthorized, setUnauthorized, setSiteError]) => {
     const result = useQuery({queryKey: ['blocked'], 
         queryFn: async () => {
             return await fetch('http://localhost:9000/api/blocked', {
@@ -8,10 +8,17 @@ export const useFetchBlocked = (setSiteError) => {
                 credentials: 'include'
             })
             .then(res => {
-                if(res.ok === false) {
+                if(res.status === 401) {
+                    setUnauthorized(true);
+                }
+                else if(res.ok === false) {
                     throw Error(`${res.status}: ${res.statusText}`);
                 }
                 else {
+                    if(unauthorized) {
+                        setUnauthorized(false);
+                    }
+
                     return res.json();
                 }
             })
