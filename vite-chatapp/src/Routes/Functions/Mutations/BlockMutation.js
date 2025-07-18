@@ -4,7 +4,7 @@ import {client} from '../../../client';
 export const useBlockMutation = ([user, logged, blocklist, disableBlockWarning, setSiteError]) => {
     const mutation = useMutation({
         mutationFn: async () => {
-            return await fetch(`http://localhost:9000/api/${user.username}/block/toggle`, {
+            return await fetch(`http://127.0.0.1:9000/api/${user.username}/block/toggle`, {
                 method: blocklist.some((blocked) => blocked.blocked_user.id === user.id ? 'DELETE' : 'POST'),
                 credentials: 'include'
             })

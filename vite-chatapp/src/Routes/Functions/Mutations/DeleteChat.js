@@ -4,7 +4,7 @@ import {client} from '../../../client'
 export const deleteChatMutation = (chat, setSiteError) => {
     const mutation = useMutation({
         mutationFn: async () => {
-            return await fetch(`http://localhost:9000/api/${chat.user2.username}/chat/delete`, {
+            return await fetch(`http://127.0.0.1:9000/api/${chat.user2.username}/chat/delete`, {
                 method: 'DELETE',
                 credentials: 'include'
             })

@@ -4,7 +4,7 @@ export const useFetchSearch = ([query, unauthorized, setUnauthorized, setSiteErr
     const result = useQuery({
         queryKey: ['search'],
         queryFn: async () => {
-            return await fetch(`http://localhost:9000/api/search/${query}`, {
+            return await fetch(`http://127.0.0.1:9000/api/search/${query}`, {
                 method: 'GET',
                 credentials: 'include'
             })

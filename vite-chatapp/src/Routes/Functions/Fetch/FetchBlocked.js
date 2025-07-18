@@ -3,7 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 export const useFetchBlocked = ([unauthorized, setUnauthorized, setSiteError]) => {
     const result = useQuery({queryKey: ['blocked'], 
         queryFn: async () => {
-            return await fetch('http://localhost:9000/api/blocked', {
+            return await fetch('http://127.0.0.1:9000/api/blocked', {
                 method: 'GET',
                 credentials: 'include'
             })

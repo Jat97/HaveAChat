@@ -4,7 +4,7 @@ export const useFetchLogged = (unauthorized, setUnauthorized, setSiteError) => {
     const result = useQuery({
         queryKey: ['logged'], 
         queryFn: async () => {
-            return await fetch('http://localhost:9000/api/user', {
+            return await fetch('http://127.0.0.1:9000/api/user', {
                 method: 'GET',
                 credentials: 'include'
             })

@@ -4,7 +4,7 @@ export const useFetchFriends = ([unauthorized, setUnauthorized, setSiteError]) =
     const result = useQuery({
         queryKey: ['friends'], 
         queryFn: async () => {
-            return await fetch('http://localhost:9000/api/friends', {
+            return await fetch('http://127.0.0.1:9000/api/friends', {
                 method: 'GET',
                 credentials: 'include'
             })

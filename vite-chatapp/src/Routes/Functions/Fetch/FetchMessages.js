@@ -4,7 +4,7 @@ export const useFetchMessages = ([username, unauthorized, setUnauthorized, setSi
     const result = useQuery({
         queryKey: ['messages', username],
         queryFn: async () => {
-            return await fetch(`http://localhost:9000/api/${username}/chat`, {
+            return await fetch(`http://127.0.0.1:9000/api/${username}/chat`, {
                 method: 'GET',
                 credentials: 'include'
             })
