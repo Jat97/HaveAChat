@@ -2,7 +2,7 @@
 
 ## Overview
 
-    A simple app to send and receive messages from other users. Users can also add friends by accepting chat requests that have been sent to them, or they can block users. There is also a search feature that allows users to find and contact others.
+A simple app to send and receive messages from other users. Users can also add friends by accepting chat requests that have been sent to them, or they can block users. There is also a search feature that allows users to find and contact others.
 
 ## Table of Contents
 
@@ -136,7 +136,7 @@ None
 
 **Request Error Example** 
 
-> {email: Please enter a valid email address}
+> { email: Please enter a valid email address }
 
 **Response** 
 
@@ -173,7 +173,7 @@ If the request is unsuccessful, then the server will send a 400 HTTP status code
 
 **Request Error Example** 
 
-> {user_err: This account does not exist}
+> { user_err: This account does not exist }
 
 **Response Example** 
 
@@ -432,12 +432,12 @@ None
 	        {
 		        id: 101,
 		        user2: {
-	            "id": 60,
-                "display_name": "John Smith", 
-        	    "username": "ExampleFriend1",
-       	        "profile_picture": "image_2.jpg",
-                "online": true,
-                "hidden": false
+                    "id": 60,
+                    "display_name": "John Smith", 
+                    "username": "ExampleFriend1",
+                    "profile_picture": "image_2.jpg",
+                    "online": true,
+                    "hidden": false
                 },
                 last_message_sent: {
                     "text": "What would you like to talk about?",
@@ -581,7 +581,7 @@ Search for users on the platform
 | /api/search?{query} | GET | Search for a user to start a chat with |
 
 
-#### GET /api/search?<font color='red'{query}</font>
+#### GET /api/search?<font color='red'>{query}</font>
 
 The user may search for a user to begin a new chat.
 
