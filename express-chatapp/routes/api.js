@@ -32,9 +32,9 @@ router.patch('/user/logout', userController.log_out);
 
 router.get('/chats', chatController.get_chats);
 
-router.post('/:username/message', upload.single('chatimage'), chatController.send_message);
-
 router.post('/chat/:username', chatController.initiate_chat);
+
+router.post('/:username/message', upload.single('chatimage'), chatController.send_message);
 
 router.post('/chat/:requestid/accept', chatController.accept_chat_request);
 
