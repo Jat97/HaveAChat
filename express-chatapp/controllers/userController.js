@@ -47,12 +47,12 @@ exports.create_account = [
         const errors = validationResult(req);
 
         if(!errors.isEmpty()) {
-            res.json({errors});
+            res.json({errors: errors});
         }
         else {
             bcrypt.hash(req.body.password, 10, async (err, hashWord) => {
                 if(err) {
-                    res.json({err});
+                    res.status(500).json({error: err});
                 }
                 else {
                     const user = await db.query(
@@ -73,7 +73,7 @@ exports.create_account = [
                                 secure: false,
                                 httpOnly: true,
                                 path: '/api'
-                            }).redirect(303, '/api/chats');
+                            }).sendStatus(201);
                         }
                     });
                 }
@@ -84,11 +84,7 @@ exports.create_account = [
 
 exports.log_in = async (req, res) => {
     const user = await db.query(`
-        SELECT username as username,
-        display_name as display_name,
-        profile_picture as profile_picture,
-        online as online,
-        hidden as hidden 
+        SELECT *
         FROM users 
         WHERE username = $1 OR email = $1`, 
         [req.body.user]
@@ -100,7 +96,7 @@ exports.log_in = async (req, res) => {
     else {
         bcrypt.compare(req.body.password, user.rows[0].password, (err, result) => {
             if(err) {
-                res.json({err});
+                res.status(500).json({error: err});
             }
             else if(result) {
                 const logged_user = user.rows[0];
@@ -111,22 +107,25 @@ exports.log_in = async (req, res) => {
                         res.json({err});
                     }
                     else {
-                        await db.query(`UPDATE users SET online = $1 WHERE id = $2`, [true, user.rows[0].id]);
+                        await db.query(
+                            `UPDATE users SET online = $1 WHERE id = $2`, 
+                            [true, user.rows[0].id]
+                        );
 
                         res.cookie('usertoken', key, {
                             expires: new Date(Date.now() + 1000000000),
                             secure: false,
                             httpOnly: true,
                             path: '/api'
-                        }).redirect(303, '/api/chats');
+                        }).sendStatus(200);
                     }
                 });
             }
             else if(req.body.password.length === 0) {
-                res.json({pass_err: 'Please enter your password.'});
+                res.status(400).json({pass_err: 'Please enter your password.'});
             }
             else {
-                res.json({pass_err: 'Your password is incorrect.'});
+                res.status(400).json({pass_err: 'Your password is incorrect.'});
             }
         });
     }
@@ -160,7 +159,7 @@ exports.user_index = async (req, res) => {
             res.status(200).json({users: users.rows});
         }
         else {
-            res.status(401).json({});
+            res.sendStatus(401);
         }
     }
     catch (err) {
@@ -180,16 +179,19 @@ exports.change_profile_picture = async (req, res) => {
             }
             
             if(result) {
-                await db.query(
-                    `UPDATE users SET profile_picture = $1 WHERE id = $2`, 
+                var updated_user = await db.query(
+                    `UPDATE users SET profile_picture = $1 WHERE id = $2 RETURNING profile_picture`, 
                     [result.secure_url, user_key.logged_user.id]
                 );
 
-                res.status(200).json({});
+                res.status(200).json({updated_user: updated_user.rows[0]});
             }
             else {
-                res.json({err: 'Unable to upload image.'});
+                res.status(400).json({image_error: 'Unable to upload image.'});
             }
+        }
+        else {
+            res.sendStatus(401);
         }
     }
     catch (err) {
@@ -197,100 +199,28 @@ exports.change_profile_picture = async (req, res) => {
     }
 }   
 
-exports.get_friends = async (req, res) => {
-    try {
-        const user_key = await validateToken(req, res);
-
-        if(user_key) {
-            const friends = await db.query(
-                `SELECT username as username,
-                display_name as display_name,
-                profile_picture as profile_picture,
-                online as online,
-                hidden as hidden
-                FROM friends 
-                WHERE user1 = $1`, 
-                [user_key.logged_user.id]
-            );
-
-            const users = await db.query(`SELECT * FROM users`);
-
-            const friendslist = [];
-
-            friends.rows.forEach(friend => {
-                users.rows.forEach(user => {
-                    if(user.id === friend.user2) {
-                        friendslist.push(user);
-                    }
-                    else {
-                        return null;
-                    }
-                })
-            });
-
-            res.json({friends: friendslist});
-        }
-    }
-    catch (err) {
-        res.status(500).json({error: err});
-    }
-};
-
-exports.get_blocked_users = async (req, res) => {
-    try {
-        const user_key = await validateToken(req, res);
-
-        if(user_key) {
-            const blocked_users = await db.query(`
-                SELECT * FROM blocked_users WHERE blocked_by = $1`, [user_key.logged_user.id]
-            );
-
-            const users = await db.query(`
-                SELECT username as username,
-                display_name as display_name,
-                profile_picture as profile_picture,
-                online as online,
-                hidden as hidden 
-                FROM users`
-            );
-
-            const blocklist = [];
-
-            blocked_users.rows.forEach(blocked => {
-                users.rows.forEach(user => {
-                    if(blocked.blocked_user === user.id) {
-                        blocklist.push(user);
-                    }
-                });
-            });
-
-            res.json({blocked_users: blocklist});
-        }
-        else {
-            res.status(401).json({});
-        }
-    }
-    catch (err) {
-        res.status(500).json({error: err});
-    }
-};
-
 exports.remove_from_friendslist = async (req, res) => {
     try {
         const user_key = await validateToken(req, res);
 
         if(user_key) {
-            await db.query(
-                `DELETE FROM friends 
-                JOIN users ON user.id = friends.user1.id
-                WHERE user1.id = $1 AND user2.username = $2`, 
-                [user_key.logged_user.id, req.params.username]
+            const unfriended_user = await db.query(
+                `SELECT * 
+                FROM users
+                WHERE username = $1`,
+                [req.params.username]
             );
             
-            res.status(200).json({});
+            await db.query(
+                `DELETE FROM friends
+                WHERE (user1 = $1 AND user2 = $2) OR (user1 = $2 AND user2 = $1)`,
+                [user_key.logged_user.id, unfriended_user.rows[0].id]
+            );
+            
+            res.sendStatus(200);
         }
         else {
-            res.status(401).json({});
+            res.sendStatus(401);
         }
     }
     catch (err) {
@@ -298,54 +228,79 @@ exports.remove_from_friendslist = async (req, res) => {
     }
 };
 
-exports.toggle_block_users = async (req, res) => {
+exports.block_user = async (req, res) => {
+    try{
+        const user_key = await validateToken(req, res);
+        
+        if(user_key) {
+            const user = await db.query(
+                `SELECT * FROM users WHERE username = $1`,
+                [req.params.username]
+            );
+
+            const new_block = await db.query(
+                `INSERT INTO blocked_users (blocked_user, blocked_by) 
+                VALUES ($1, $2)
+                RETURNING *`,
+                [user.rows[0].id, user_key.logged_user.id] 
+            );
+
+            await db.query(
+                `DELETE FROM chats 
+                WHERE (user1 = $1 AND user2 = $2) OR (user1 = $2 AND user2 = $1)`,
+                [user_key.logged_user.id, user.rows[0].id]
+            );
+
+            await db.query(
+                `DELETE FROM messages 
+                WHERE (sending_user = $1 AND receiving_user = $2) OR (sending_user = $2 AND receiving_user = $1)`,
+                [user_key.logged_user.id, user.rows[0].id]
+            );
+
+            await db.query(
+                `DELETE FROM chat_requests
+                WHERE (requesting_user = $1 AND requested_user = $2) OR (requesting_user = $2 AND requested_user = $1)`,
+                [user_key.logged_user.id, user.rows[0].id]
+            );
+
+            await db.query(
+                `DELETE FROM friends
+                WHERE (user1 = $1 AND user2 = $2) OR (user1 = $2 AND user2 = $1)`,
+                [user_key.logged_user.id, user.rows[0].id] 
+            )
+
+            res.status(201).json({new_block: new_block.rows[0]});
+        }
+        else {
+            res.sendStatus(401);
+        }
+    }
+    catch (err) {
+        res.status(500).json({error: err});
+    }
+};
+
+exports.unblock_user = async (req, res) => {
     try {
         const user_key = await validateToken(req, res);
 
         if(user_key) {
-            const user = await db.query(`SELECT * FROM users WHERE username = $1`, [req.params.username]);
-
-            const blocked_user = await db.query(
-                `SELECT * FROM blocked_users 
-                WHERE blocked_user = $1`, 
-                [user.rows[0].id]
+            const user = await db.query(
+                `SELECT * FROM users 
+                WHERE username = $1`,
+                [req.params.username]
             );
 
-            if(blocked_user.rows.length > 0) {
-                await db.query(
-                    `DELETE FROM blocked_users 
-                    WHERE blocked_user = $1 AND blocked_by = $2`, 
-                    [user.rows[0].id, user_key.logged_user.id] 
-                );
-            }
-            else {
-                await db.query(
-                    `INSERT INTO blocked_users (blocked_user, blocked_by) VALUES ($1, $2)`, 
-                    [user.rows[0].id, user_key.logged_user.id]
-                );
+            await db.query(
+                `DELETE FROM blocked_users
+                WHERE blocked_user = $1 AND blocked_by = $2`,
+                [user.rows[0].id, user_key.logged_user.id]
+            );
 
-                await db.query(
-                    `DELETE FROM chats WHERE (user1 = $1 AND user2 = $2) OR (user1 = $2 AND user2 = $1)`, 
-                    [user_key.logged_user.id, user.rows[0].id]
-                );
-
-                await db.query(
-                    `DELETE FROM messages WHERE (sending_user = $1 AND receiving_user = $2) 
-                    OR (sending_user = $2 AND receiving_user = $1)`, 
-                    [user_key.logged_user.id, user.rows[0].id]
-                );
-
-                await db.query(
-                    `DELETE FROM chat_messages WHERE (requesting_user = $1 AND requested_user = $2) 
-                    OR (requesting_user = $2 AND requested_user = $1)`
-                    [user_key.logged_user.id, user.rows[0].id]
-                );
-            }
-
-            res.status(200);
+            res.sendStatus(200);
         }
         else {
-            res.status(401).json({});
+            res.sendStatus(401);
         }
     }
     catch (err) {
@@ -358,12 +313,12 @@ exports.toggle_hidden_status = async (req, res) => {
         const user_key = validateToken(req, res);
 
         if(user_key) {
-            await db.query(`
-                UPDATE users SET hidden = $1 WHERE id = $2`, 
+            const hidden_status = await db.query(`
+                UPDATE users SET hidden = $1 WHERE id = $2 RETURNING id, hidden`, 
                 [user_key.logged_user.hidden ? false : true, user_key.logged_user.id]
             );
             
-            res.status(200).json({});
+            res.status(200).json({hidden_status: hidden_status.rows[0]});
            
         }
         else {
@@ -375,35 +330,6 @@ exports.toggle_hidden_status = async (req, res) => {
     }
 };
 
-exports.search_users = async (req, res) => {
-    try {
-        const user_key = await validateToken(req, res);
-
-        if(user_key) {
-            const search_query = `%${req.query.query}%`;
-
-            const search_results = await db.query(
-                `SELECT username as username,
-                display_name as display_name,
-                profile_picture as profile_picture,
-                online as online,
-                hidden as hidden  
-                FROM users 
-                WHERE username LIKE $1 OR display_name LIKE $1`, 
-                [search_query]
-            );
-
-            res.json({users: search_results.rows}); 
-        }
-        else {
-            res.status(401).json({});
-        }
-    }
-    catch (err) {
-        res.status(500).json({error: err});
-    }
-}
-
 exports.delete_account = async (req, res) => {
     try {
         const user_key = await validateToken(req, res);
@@ -411,10 +337,10 @@ exports.delete_account = async (req, res) => {
         if(user_key) {
             await db.query(`DELETE FROM users WHERE = $1`, [user_key.logged_user.id]);
 
-            res.status(200).json({});
+            res.sendStatus(200);
         }
         else {
-            res.status(401).json({});
+            res.sendStatus(401);
         }
     }
     catch (err) {
@@ -427,10 +353,36 @@ exports.get_logged_data = async (req, res) => {
         const user_key = await validateToken(req, res);
 
         if(user_key) {
-            res.json({logged_user: user_key.logged_user});
+            const friends = await db.query(
+                `SELECT id,
+                username,
+                display_name,
+                profile_picture
+                online,
+                hidden
+                FROM friends
+                WHERE user1 = $1`,
+                [user_key.logged_user.id]
+            );
+
+            const blocked_users = await db.query(
+                `SELECT id,
+                username,
+                display_name
+                profile_picture
+                FROM blocked_users
+                WHERE blocked_by = $1`,
+                [user_key.logged_user.id]
+            );
+
+            res.status(200).json({
+                logged_user: user_key.logged_user,
+                friends: friends.rows,
+                blocked_users: blocked_users.rows 
+            });
         }
         else {
-            res.status(401).json({});
+            res.sendStatus(401);
         }
     }
     catch (err) {
@@ -445,8 +397,7 @@ exports.log_out = async (req, res) => {
       if(user_key) {
         await db.query(`UPDATE users SET online = $1 WHERE id = $2`, [false, user_key.logged_user.id]);
 
-        res.clearCookie(req.cookies.usertoken ? 'usertoken' : 'signtoken', {domain: 'localhost', path: '/api'})
-            .redirect(303, '/api/login');
+        res.clearCookie(req.cookies.usertoken ? 'usertoken' : 'signtoken', {domain: 'localhost', path: '/api'});
       }
       else {
         res.status(401).json({});
