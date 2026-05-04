@@ -72,6 +72,35 @@ exports.get_chats = async (req, res) => {
     }
 };
 
+exports.create_chat = async (req, res) => {
+    try {
+        const user_key = await validateToken(req, res);
+
+        if(user_key) {
+            const user = await db.query(
+                `SELECT * 
+                FROM users
+                WHERE username = $1`,
+                [req.params.username]
+            );
+
+            const new_chat = await db.query(
+                `INSERT INTO chats (user1, user2)
+                VALUES ($1, $2)`,
+                [user_key.logged_user.id, user.rows[0].id]
+            );
+
+            res.sendStatus(201).json({chat: new_chat.rows[0]});
+        }
+        else {
+            res.sendStatus(401);
+        }
+    }
+    catch (err) {
+        res.status(500).json({error: err});
+    }
+};
+
 exports.send_message = async (req, res) => { 
     try {
         const user_key = await validateToken(req, res);
@@ -112,13 +141,13 @@ exports.send_message = async (req, res) => {
             );
 
             await db.query(
-                `UPDATE chats SET last_message_sent = $1 WHERE user1 = $2 AND user2 = $3`, 
-                [message.rows[0].id, user_key.logged_user.id, receiving_user.rows[0].id]
+                `UPDATE chats SET WHERE user1 = $1 AND user2 = $2`, 
+                [user_key.logged_user.id, receiving_user.rows[0].id]
             );
 
             if(partner_chat.rows.length === 0) {
-                partner_chat = await db.query(
-                    `INSERT INTO chats (user1, user2, last_message_sent) VALUES ($1, $2, $3)`, 
+                await db.query(
+                    `INSERT INTO chats (user1, user2) VALUES ($1, $2)`, 
                     [receiving_user.rows[0].id, user_key.logged_user.id, message.rows[0].id]
                 );
 
@@ -127,18 +156,8 @@ exports.send_message = async (req, res) => {
                     [user_key.logged_user.id, receiving_user.rows[0].id]
                 );
             }
-            
-            await db.query(
-                `UPDATE chats SET last_message_sent = $1 WHERE id = $2`,
-                [message.rows[0].id, partner_chat.rows[0].id]
-            );
-            
-            await db.query(
-                `UPDATE chats SET last_message_sent = $1 WHERE id = $2`, 
-                [message.rows[0].id, user_chat.rows[0].id]
-            );
 
-            res.status(201).json(message.rows[0]);
+            res.status(201).json({message: message.rows[0]});
         }
         else {
             res.sendStatus(401);
@@ -147,22 +166,6 @@ exports.send_message = async (req, res) => {
     catch (err) {
         res.status(500).json({error: err});
     }  
-};
-
-exports.create_chat = async (req, res) => {
-    try {
-        const user_key = await validateToken(req, res);
-
-        if(user_key) {
-            
-        }
-        else {
-            res.sendStatus(401);
-        }
-    }
-    catch (err) {
-        res.status(500).json({error: err});
-    }
 };
 
 exports.accept_chat_request = async (req, res) => {
