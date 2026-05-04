@@ -32,7 +32,7 @@ router.patch('/user/logout', userController.log_out);
 
 router.get('/chats', chatController.get_chats);
 
-router.post('/chat/:username', chatController.initiate_chat);
+router.post('/:username/chat', chatController.initiate_chat);
 
 router.post('/:username/message', upload.single('chatimage'), chatController.send_message);
 
