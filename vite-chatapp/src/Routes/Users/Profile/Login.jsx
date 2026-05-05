@@ -13,7 +13,7 @@ const Login = () => {
     const setPasswordError = useChatStore((state) => state.setPasswordError);
 
     const logIn = () => {
-        fetch('http://localhost:9000/api/login', {
+        fetch('http://127.0.0.1:9000/api/login', {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -36,7 +36,6 @@ const Login = () => {
             }
         })
         .then(json => {
-            console.log(json.user_err, !json.user_err);
             setUsernameError(!json.user_err  ? null : json.user_err);
             setPasswordError(!json.pass_err  ? null : json.pass_err);
         })

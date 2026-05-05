@@ -20,7 +20,7 @@ const Signup = () => {
     const setPasswordError = useChatStore((state) => state.setPasswordError);
 
     const signUp = () => {
-        fetch('http://localhost:9000/api/signup', {
+        fetch('http://127.0.0.1:9000/api/signup', {
             method: 'POST',
             credentials: 'include',
             headers: {
