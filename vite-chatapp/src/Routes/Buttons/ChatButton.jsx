@@ -14,17 +14,17 @@ const ChatButton = (props) => {
 
     const initiate_mutation = useInitiateChatMutation(setSiteError);
 
-    const initiateChat = (e) => {
-        initiateChatMutation.mutate(e.target.id);
+    const initiateChat = () => {
+        initiateChatMutation.mutate(user);
         setSelectedChat(user);
         setChatSearch([]);
         navigate(`/api/${user.username}/chat`);
     }
 
     return (
-        <button type='button' id={user?.username} className='cursor-pointer flex justify-around items-center 
+        <button type='button' className='cursor-pointer flex justify-around items-center 
             text-white font-semibold bg-sky-400 rounded-2xl w-[100px] active:bg-sky-200 hover:bg-sky-200' 
-            onClick={(e) => initiateChat(e)}>
+            onClick={() => initiateChat()}>
             <ChatBubbleLeftIcon className='h-6' />
             Chat
         </button> 
