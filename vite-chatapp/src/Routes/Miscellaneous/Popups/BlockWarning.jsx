@@ -20,7 +20,7 @@ const BlockWarning = (props) => {
 
     const block_mutation = useBlockUserMutation([disableBlockWarning, setSiteError]);
     
-    const toggleBlock = () => {
+    const blockUser = () => {
         block_mutation.mutate(user);
 
         if(selected_chat.id === user.id) {
@@ -36,7 +36,7 @@ const BlockWarning = (props) => {
                 <p className='text-base md:text-sm'> This will delete your chat with them. </p>
                  
                 <div className='flex justify-around items-center my-4 w-2/3 md:w-1/2'>
-                    <button className='bg-emerald-200 rounded-full w-[100px] hover:bg-lime-200' onClick={() => toggleBlock()}>
+                    <button className='bg-emerald-200 rounded-full w-[100px] hover:bg-lime-200' onClick={() => blockUser()}>
                         Confirm 
                     </button>
                     <button className='bg-zinc-200 rounded-full w-[100px] hover:bg-slate-200' onClick={() => disableBlockWarning()}>
