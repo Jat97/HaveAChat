@@ -19,14 +19,18 @@ const BlockButton = (props) => {
     
     const location = useLocation();
     
-    const unblock_mutation = useUnblockUserMutation(setSiteError);
+    const unblock_mutation = useUnblockUserMutation(setSiteError);  
+
+    const unblockUser = () => {
+        unblock_mutation.mutate(user);
+    }
 
     return (
         <div className={`${location.pathname.includes('blocked') ? 'flex flex-col items-center' : ''} w-full`}>
             <button data-testid={user.username} id={user.username} type='button' className={`text-lg font-semibold 
                 bg-violet-400 p-2 md:text-base md:p-0 active:bg-purple-200 hover:bg-purple-200
                 ${location.pathname.includes('blocked') ? 'rounded-full w-30' : 'w-full'} `} 
-                onClick={() => blocks.some((block) => block.id === user.id) ? mutate() : enableBlockWarning()}>
+                onClick={() => blocks.some((block) => block.id === user.id) ? unblockUser() : enableBlockWarning()}>
                 {blocks?.some((block) => block.id === user.id) ?
                     'Unblock'
                 : 
