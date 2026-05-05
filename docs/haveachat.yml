@@ -6,11 +6,11 @@ info:
   version: 0.0.0
 
 servers:
-  -url: http://api.haveachat.com
-  description: Main server
+  - url: http://api.haveachat.com
+    description: Main server
 
-  -url: http://staging-api.haveachat.com
-  description: Testing server
+  - url: http://staging-api.haveachat.com
+    description: Testing server
 
 paths:
   /users:
@@ -150,26 +150,28 @@ paths:
             setCookie:
               schema:
                 type: string
-                examples:
-                  example1:
-                    value: usertoken=logged1a2b3c; Path=/api; HttpOnly
+              examples:
+                example1:
+                  value: usertoken=logged1a2b3c; Path=/api; HttpOnly
         '400':
           description: The user submitted a username or email that was already taken, or their passwords did not match.
           content:
             application/json:
-              schemas:
-                username:
-                  type: string
-                display_name:
-                  type: string
-                dob: 
-                  type: string
-                email: 
-                  type: string
-                password:
-                  type: string
-                confirm:
-                  type: string
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  display_name:
+                    type: string
+                  dob: 
+                    type: string
+                  email: 
+                    type: string
+                  password:
+                    type: string
+                  confirm:
+                    type: string
               examples:
                 example1:
                   value:
@@ -190,7 +192,7 @@ paths:
                   value:  
                     confirm: Passwords do not match.
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
   
   /login:
     post:
@@ -209,26 +211,29 @@ paths:
           description: The user was successfully logged into their account.
           headers:
             setCookie:
+              schema:
+                type: string
               examples:
                 example1:
                   value: usertoken=logged1a2b3c; Path=/api; HttpOnly
         '400':
           description: The user submitted incomplete or incorrect information.
-          contents:
-            schema:
-              type: object
-              properties:
-                user_error:
-                  type: string
-                pass_error:
-                  type: string
-            examples:
-              example1:
-                value:
-                  user_error: This account does not exist.
-              example2:
-                value:
-                  pass_error: The password is incorrect.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_error:
+                    type: string
+                  pass_error:
+                    type: string
+              examples:
+                example1:
+                  value:
+                    user_error: This account does not exist.
+                example2:
+                  value:
+                    pass_error: The password is incorrect.
   
   /user/picture:
     patch:
@@ -264,9 +269,9 @@ paths:
                     updated_user:
                       profile_picture: https://examplestorage.com/examplestring5/image/upload/examplestring6/image.jpg
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'    
+          $ref: '#/components/responses/ServerError'    
   
   /user/hidden:
     patch:
@@ -329,9 +334,9 @@ paths:
         '200':
           description: The user's friend object was deleted. The unfriended user's friend object will also be deleted.
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
         
   /block/{username}:
     post:
@@ -369,9 +374,9 @@ paths:
                       blocked_user: 1
                       blocked_by: 4
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
   
   /unblock/{username}:
     delete: 
@@ -393,7 +398,7 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError' 
   
-  /chats
+  /chats:
     get:
       summary: Retrieve the user's chats, messages, and requests.
       security:
@@ -410,9 +415,9 @@ paths:
                     type: array
                     items:
                       anyOf:
-                      - $ref: '#/components/schemas/Chats'
-                      - $ref: '#/components/schemas/Messages'
-                      - $ref: '#/components/schemas/ChatRequests'
+                      - $ref: '#/components/schemas/Chat'
+                      - $ref: '#/components/schemas/Message'
+                      - $ref: '#/components/schemas/ChatRequest'
               examples:
                 example1:
                   value:
@@ -470,9 +475,9 @@ paths:
                         id: 30
                         requesting_user: 3
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
   
   /{username}/message:
     post:
@@ -492,9 +497,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  $ref: '#/components/schemas/Message'
+                $ref: '#/components/schemas/Message'
               examples:
                 example1:
                   value:
@@ -506,9 +509,9 @@ paths:
                     checked: false
                     image: https://examplestorage.com/examplestring14/image/upload/examplestring15/william_mckinley.jpg
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
   
   /chat/accept/{requestid}:
     post:
@@ -546,9 +549,9 @@ paths:
                     user1: 4
                     user2: 3
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
 
   /chat/rejected/{requestid}: 
     delete:
@@ -566,9 +569,9 @@ paths:
         '200':
           description: The chat request was successfully deleted.
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
     
   /chat/{chatid}:
     delete:
@@ -586,9 +589,9 @@ paths:
         '200':
           description: The chat was deleted. If the other user has their copy of the chat, then all previous messages will be viewable if a new chat is created. If the other user has deleted their copy, then all messages will be deleted as well.
         '401':
-          $ref: '#/components/schemas/NotAuthorized'
+          $ref: '#/components/responses/NotAuthorized'
         '500':
-          $ref: '#/components/schemas/ServerError'
+          $ref: '#/components/responses/ServerError'
 
 components:
   schemas:
@@ -704,14 +707,14 @@ components:
         requesting_user:
           type: integer
 
-    securitySchemas:
-      logCookie:
-        type: apiKey
-        in: cookie
-        name: usertoken
+  securitySchemes:
+    logCookie:
+      type: apiKey
+      in: cookie
+      name: usertoken
 
-    responses:
-      NotAuthorized:
-        description: Token either missing or expired.
-      ServerError:
-        description: Unexpected server error.
+  responses:
+    NotAuthorized:
+      description: Token either missing or expired.
+    ServerError:
+      description: Unexpected server error.
