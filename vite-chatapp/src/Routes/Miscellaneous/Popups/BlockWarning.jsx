@@ -1,7 +1,7 @@
 import {useChatStore} from '../../../Context/ChatStore';
-import {useBlockMutation} from '../../Functions/Mutations/BlockMutation';
-import {useFetchLogged} from '../../Functions/Fetch/FetchLogged';
-import {useFetchChats} from '../../Functions/Fetch/FetchChats';
+import {useBlockUserMutation} from '../../Functions/Mutations/UserMutation';
+import {useFetchLogged} from '../../Functions/Queries/FetchLogged';
+import {useFetchChats} from '../../Functions/Queries/FetchChats';
 
 const BlockWarning = (props) => {
     const user = props.props[0];
@@ -17,14 +17,14 @@ const BlockWarning = (props) => {
     const disableBlockWarning = () => {
         setBlockWarning(false);
     }
-    
-    const {mutate} = useBlockMutation([user, logData, blocklist, disableBlockWarning, setSiteError]);
+
+    const block_mutation = useBlockUserMutation([disableBlockWarning, setSiteError]);
     
     const toggleBlock = () => {
-        mutate();
+        block_mutation.mutate(user);
 
         if(selected_chat.id === user.id) {
-            setSelectedChat(chatData.data.chats[0].user2);
+            setSelectedChat(chatData.data.chats[0].user);
         }
     }
 
