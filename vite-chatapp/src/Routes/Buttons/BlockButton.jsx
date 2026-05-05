@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {useLocation} from 'react-router-dom';
-import {useFetchLogged} from '../Functions/Fetch/FetchLogged';
-import {useBlockMutation} from '../Functions/Mutations/BlockMutation';
+import {useFetchLogged} from '../Functions/Queries/FetchLogged';
+import {useUnblockUserMutation} from '../Functions/Mutations/UserMutations';
 import {useChatStore} from '../../Context/ChatStore';
 import BlockWarning from '../Miscellaneous/Popups/BlockWarning';
 
@@ -13,13 +13,13 @@ const BlockButton = (props) => {
 
     const [blockWarning, setBlockWarning] = useState(false);
 
-    const {mutate} = useBlockMutation([user, undefined, blocks, undefined, setSiteError]);
-
     const enableBlockWarning = () => {
         setBlockWarning(true);
     }
     
     const location = useLocation();
+    
+    const unblock_mutation = useUnblockUserMutation(setSiteError);
 
     return (
         <div className={`${location.pathname.includes('blocked') ? 'flex flex-col items-center' : ''} w-full`}>
