@@ -1,11 +1,10 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useMutation} from '@tanstack/react-query';
 import {PaperAirplaneIcon, PaperClipIcon, XMarkIcon} from '@heroicons/react/24/solid';
 import {useChatStore} from '../../Context/ChatStore';
-import {client} from './../../client';
-import {useFetchLogged} from '../Functions/Fetch/FetchLogged';
-import {useFetchMessages} from '../Functions/Fetch/FetchMessages';
+import {useSendMessageMutation, useAcceptChatRequestMutation, useRejectChatRequestMutation} from '../Functions/Mutations/ChatMutations'
+import {useFetchLogged} from '../Functions/Queries/UserQueries';
+import {useFetchChats} from '../Functions/Queries/ChatQuery';
 import UserDisplay from '../Users/UserDisplay';
 import Message from './Message';
 import ChatReturn from '../Buttons/ChatReturn';
@@ -19,13 +18,17 @@ const UserChat = (props) => {
     const [image, setImage] = useState({file: null, reader: null});
 
     const mobileView = useChatStore((state) => state.mobileView);
-    const unauthorized = useChatStore((state) => state.unauthorized);
-    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
+    const authorized = useChatStore((state) => state.unauthorized);
+    const setAuthorized = useChatStore((state) => state.setUnauthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
     const setSelectedChat = useChatStore((state) => state.setSelectedChat);
 
-    const logData = useFetchLogged([unauthorized, setUnauthorized, setSiteError]);
-    const messageData = useFetchMessages([user?.username, unauthorized, setUnauthorized, setSiteError]);
+    const logData = useFetchLogged([authorized, setAuthorized, setSiteError]);
+    const chatData = useFetchChats([user?.username, authorized, setAuthorized, setSiteError]);
+    
+    const message_mutation = useSendMessageMutation(setSiteError);
+    const accept_request_mutation = useAcceptChatRequestMutation(setSiteError);
+    const reject_request_mutation = useRejectChatRequestMutation(setSiteError);
 
     const addFile = () => {
         const file = document.querySelector('#message_file');
@@ -43,157 +46,23 @@ const UserChat = (props) => {
         setImage(null);
     }
 
-    const messageMutation = useMutation({
-        mutationFn: async (message) => {
-            const form = new FormData();
-
-            if(image.file) {
-                const file = new File([image.file], 'upload.jpg');
-
-                form.append('chatimage', file); 
-            }
-
-            form.append('text', message);
-
-            setImage({file: null, reader: null});
-
-            return await fetch(`http://localhost:9000/api/${user.username}/message`, {
-                method: 'POST',
-                credentials: 'include',
-                body: form
-            })
-            .then(res => {
-                if(res.ok === false) {
-                    throw Error(`${res.status}: ${res.statusText}`);
-                }
-                else {
-                    return res.json();
-                }
-            })
-            .catch(err => setSiteError(err.message))
-        },
-        onMutate: async (data) => {
-            await client.cancelQueries({queryKey: ['messages', user.username]});
-            await client.cancelQueries({queryKey: ['chats']});
-
-            const message_cache = client.getQueryData(['messages', user.username]) || []; 
-            const chat_cache = client.getQueryData(['chats']);
-            const messageArr = message_cache?.messages || []
-            const chatArr =  chat_cache?.chats || [];
-
-
-            if(messageArr) {
-                await client.setQueryData(['messages', user.username], (prev = {messages: []}) => {
-                    return {
-                        messages: [
-                            ...prev.messages,
-                            {
-                                id: Date.now(),
-                                sending_user: logData.data.logged_user.id,
-                                receiving_user: user.id,
-                                text: data,
-                                image: image.file ? image.file : null,
-                                sent: Date.now()
-                            }
-                        ]
-                    }
-                });
-
-                await client.setQueryData(['chats'], () => {
-                    chatArr.map(chat => {
-                        if(chat.user2.username === user.username) {
-                            return chat.last_message_sent = {
-                                sending_user: logData.data.logged_user.id,
-                                text: data,
-                                sent: new Date(Date.now())
-                            }
-                        }
-                    });
-                });
-            }
-
-            return {messageArr, chatArr}
-        },
-        onError: (err, data, context) => {
-            client.setQueryData(['messages', user.username], context.messageArr);
-            client.setQueryData(['chats'], context.chatArr);
-        },
-        onSettled: () => {
-            client.invalidateQueries({queryKey: ['messages', user.username]});
-            client.invalidateQueries({queryKeys: ['chats']});
-        }
-    });
-
-    const requestMutation = useMutation({
-        mutationFn: async (decision) => {
-            return await fetch(`http://localhost:9000/api/chat/${decision === 'false' ? 
-                'reject' : 'accept'}/${messageData.data.request.id}`, {
-                method: decision === 'false' ? 'DELETE' : 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(res => {
-                if(res.ok === false) {
-                    throw Error(`Error ${res.status}: ${res.statusText}`);
-                }
-                else {
-                    return res.json();
-                }
-            })
-            .catch(err => setSiteError(err.message))
-        },
-        onMutate: async (data) => {
-                await client.cancelQueries({queryKey: ['messages', user.username]});
-                await client.cancelQueries({queryKey: ['chats']});
-
-                const message_cache = client.getQueryData(['messages', user.username]);
-
-                const messageArr = client.setQueryData(['messages', user.username], () => {
-                    return {
-                       messages: data === 'false' ? [] : [...message_cache.messages], request: null 
-                    }
-                });
-
-                const chat_cache = client.getQueryData(['chats']);
-
-                const chatArr = client.setQueryData(['chats'], () => {
-                    return {
-                        chats: data === 'false' ? 
-                            chat_cache.chats.filter(chat => chat.user2.id !== user.id)
-                        : 
-                            [...chat_cache.chats]
-                    }
-                })
-
-                return {messageArr, chatArr};
-        },
-        onError: (err, data, context) => {
-            client.setQueryData(['messages', username], context.messageArr);
-            client.setQueryData(['chats'], context.chatArr);
-        },
-        onSettled: () => {
-            client.invalidateQueries({queryKey: ['messages', user.username]});
-            client.invalidateQueries({queryKeys: ['chats']});
-        }
-    });
-
     const sendMessage = () => {
-        messageMutation.mutate(document.querySelector('#message_input').value);
+        message_mutation.mutate({user: user, text: document.querySelector('#message_input').value, image: image.file});
         document.querySelector('#message_input').value = '';
     }
 
-    const handleChatRequest = (e) => {
-        requestMutation.mutate(e.target.id);
+    const acceptRequest = (e) => {
+        accept_request_mutation.mutate({id: e.target.id})
+    }
 
-        if(e.target.id === 'false') {
-            setSelectedChat(null);
-            navigate('/api/chats');
-        }
+    const rejectRequest = (e) => {
+        reject_request_mutation.mutate({id: e.target.id});
+        
+        setSelectedChat(null);
+        navigate('/api/chats');
     }
     
-    if(messageData.isLoading) {
+    if(chatData.isLoading) {
        return <div></div>
     }
   
@@ -210,31 +79,30 @@ const UserChat = (props) => {
                 )} 
             </div>
 
-            {messageData?.data?.request ? 
+            {chatData?.data?.request &&
                 <div className='flex flex-col items-center mb-2 w-full md:border md:border-black md:p-2 md:w-full'>
                     <p className='text-lg text-center font-semibold'> 
                         This user has sent you an invitation to chat with them! 
                     </p>
     
                     <div className='flex justify-around items-center font-semibold my-2 w-2/3 md:w-1/2'>
-                        <button id='true' className='bg-emerald-400 rounded-full p-1 w-2/5 md:p-0 hover:bg-green-200'
-                            onClick={(e) => handleChatRequest(e)}>
+                        <button id={chatData.data.request?.id} 
+                            className='bg-emerald-400 rounded-full p-1 w-2/5 md:p-0 hover:bg-green-200'
+                            onClick={(e) => acceptChatRequest(e)}>
                             Accept
                         </button>
     
-                        <button id='false' className='bg-red-400 rounded-full p-1 w-2/5 md:p-0 hover:bg-pink-200'
-                            onClick={(e) => handleChatRequest(e)}>
+                        <button id={chatData.data.request?.id} className='bg-red-400 rounded-full p-1 w-2/5 md:p-0 hover:bg-pink-200'
+                            onClick={(e) => rejectChatRequest(e)}>
                             Ignore
                         </button> 
                     </div>
                 </div>
-            :
-                null
             }
             
             <div className='flex flex-col flex-grow'>
                 <div className='flex-grow overflow-y-auto my-1 px-1 md:h-[calc(100vh-120px)]'>
-                    {messageData?.data?.messages.map(message => {
+                    {chatData?.data?.messages.map(message => {
                         return <Message props={[
                             message, 
                             message.sending_user === logData.data?.logged_user.id ? true : false
@@ -242,9 +110,7 @@ const UserChat = (props) => {
                     })}
                 </div>    
 
-                {messageData.data.request ? 
-                    null
-                :
+                {!chatData.data.request && 
                     <div className='relative bottom-0 bg-zinc-200 border-t border-t-slate-200 p-2 w-full'>
                         {!image?.reader ?
                             null
