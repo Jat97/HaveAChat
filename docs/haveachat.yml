@@ -426,28 +426,28 @@ paths:
                           profile_picture: https://examplestorage.com/examplestring1/image/upload/examplestring2/image.jpg
                           online: true
                           hidden: false
-                      messages:
-                      - id: 20
-                        text: Would you like to know a little fun fact?
-                        sending_user: 4
-                        receiving_user: 2
-                        sent: 2025-03-26
-                        checked: true
-                        image: null
-                      - id: 21
-                        text: Sure. Tell me a fun fact.
-                        sending_user: 2
-                        receiving_user: 4
-                        sent: 2025-03-27
-                        checked: true
-                        image: null
-                      - id: 22
-                        text: This guy holds the record for winning the most electoral votes without winning a presidential election.
-                        sending_user: 4
-                        receiving_user: 2
-                        sent: 2025-03-27
-                        checked: false
-                        image: https://examplestorage.com/examplestring11/image/upload/examplestring12/william_jennings_bryan.jpg
+                        messages:
+                        - id: 20
+                          text: Would you like to know a little fun fact?
+                          sending_user: 4
+                          receiving_user: 2
+                          sent: 2025-03-26
+                          checked: true
+                          image: null
+                        - id: 21
+                          text: Sure. Tell me a fun fact.
+                          sending_user: 2
+                          receiving_user: 4
+                          sent: 2025-03-27
+                          checked: true
+                          image: null
+                        - id: 22
+                          text: This guy holds the record for winning the most electoral votes without winning a presidential election.
+                          sending_user: 4
+                          receiving_user: 2
+                          sent: 2025-03-27
+                          checked: false
+                          image: https://examplestorage.com/examplestring11/image/upload/examplestring12/william_jennings_bryan.jpg
                       request: null
                     - chat: 
                         id: 11
@@ -458,14 +458,14 @@ paths:
                           profile_picture: https://examplestorage.com/examplestring3/image/upload/examplestring4/image.jpg
                           online: true
                           hidden: false
-                      messages:
-                      - id: 23
-                        text: "Have you ever watched The Fifth Element? I hear it's great."
-                        sending_user: 3
-                        receiving_user: 4
-                        sent: 2025-04-18
-                        checked: false
-                        image: null
+                        messages:
+                        - id: 23
+                          text: "Have you ever watched The Fifth Element? I hear it's great."
+                          sending_user: 3
+                          receiving_user: 4
+                          sent: 2025-04-18
+                          checked: false
+                          image: null
                       request:
                         id: 30
                         requesting_user: 3
@@ -673,6 +673,10 @@ components:
           format: int64
         user:
           $ref: '#/components/schemas/UserData'
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
     
     Message:
       type: object
