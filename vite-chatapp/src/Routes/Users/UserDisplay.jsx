@@ -1,50 +1,23 @@
 import {useEffect} from 'react';
-import {useMutation} from '@tanstack/react-query';
 import {CameraIcon, UserIcon} from '@heroicons/react/24/solid';
 import {useChatStore} from '../../Context/ChatStore';
-import {useFetchLogged} from '../Functions/Fetch/FetchLogged';
+import {useEditPictureMutation} from '../Functions/Mutations/UserMutations';
+import {useFetchLogged} from '../Functions/Queries/FetchLogged';
 
 const UserDisplay = (props) => { 
-    const unauthorized = useChatStore((state) => state.unauthorized);
-    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
+    const authorized = useChatStore((state) => state.authorized);
+    const setAuthorized = useChatStore((state) => state.setAuthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
 
-    const logData = useFetchLogged([unauthorized, setUnauthorized, setSiteError]);
+    const logData = useFetchLogged([authorized, setAuthorized, setSiteError]);
+    const picture_mutation = useEditPictureMutation(setSiteError);
     
     const user = props.props[0] === undefined ? logData.data?.logged_user : props.props[0];
     const is_logged_user = props.props[1];
     const mode = props.props[2];
 
-    const changePictureMutation = useMutation({
-        mutationFn: async (uploadedFile) => {
-            const file = new File([uploadedFile], 'upload.jpg');
-
-            const form = new FormData();
-
-            form.append('profilepicture', file);
-
-            return await fetch('http://localhost:9000/api/profile/picture', {
-                method: 'PATCH',
-                credentials: 'include',
-                body: form
-            }, uploadedFile)
-            .then(res => {
-                if(res.ok === false) {
-                    throw Error(`${res.status}: ${res.statusText}`);
-                }
-                else {
-                    return res.json({});
-                }
-            })
-            .catch(err => setSiteError(err.message))
-        },
-        onSuccess: async () => {
-            return await invalidateQueries({queryKeys: ['logged']});
-        }
-    });
-
     const editPicture = () => {
-        changePictureMutation.mutate(document.querySelector('#file_upload').files[0]);
+        picture_mutation.mutate(document.querySelector('#file_upload').files[0]);
     }
 
     const getOuterCSS = (mode) => {
