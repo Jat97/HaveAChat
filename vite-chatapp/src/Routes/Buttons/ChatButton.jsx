@@ -1,8 +1,7 @@
 import {useNavigate} from 'react-router-dom';
-import {useMutation} from '@tanstack/react-query';
 import {ChatBubbleLeftIcon} from '@heroicons/react/24/solid';
 import {useChatStore} from '../../Context/ChatStore';
-import {client} from './../../client';
+import {useInitiateChatMutation} from '../Functions/Mutations/ChatMutations';
 
 const ChatButton = (props) => {
     const user = props.props;
@@ -13,52 +12,7 @@ const ChatButton = (props) => {
     
     const navigate = useNavigate();
 
-    const initiateChatMutation = useMutation({
-        mutationFn: async (username) => {
-            return await fetch(`http://localhost:9000/api/${username}/chat/initiate`, {
-                method: 'PUT',
-                credentials: 'include'
-            })
-            .then(res => {
-                if(res.ok === false) {
-                    throw Error(`Error ${res.status}: ${res.statusText}`);
-                }
-                else {
-                    return res.json();
-                }
-            })
-            .catch(err => setSiteError(err.message))
-        },
-        onMutate: async () => {
-            await client.cancelQueries({queryKey: ['chats']});
-
-            const cached = client.getQueryData(['chats']) || [];
-            const chatArr = cached.chats || [];
-
-            if(chatArr) {
-                await client.setQueryData(['chats'], (prev = {chats: []}) => {
-                    return {
-                        chats: [
-                            ...prev.chats,
-                            {
-                                id: Date.now(),
-                                user2: user.id,
-                                last_message_sent: null 
-                            }
-                        ]
-                    }
-                })
-            }
-
-            return {chatArr}
-        },
-        onError: (err, data, context) => {
-            client.setQueryData(['chats'], context.chatArr);
-        },
-        onSettled: () => {
-            client.invalidateQueries({queryKey: ['chats']});
-        }
-    });
+    const initiate_mutation = useInitiateChatMutation(setSiteError);
 
     const initiateChat = (e) => {
         initiateChatMutation.mutate(e.target.id);
