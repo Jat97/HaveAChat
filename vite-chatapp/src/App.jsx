@@ -5,6 +5,7 @@ import Signup from './Routes/Users/Profile/Signup';
 import Account from './Routes/Users/Profile/AccountTab';
 import UserIndex from './Routes/Users/UserIndex';
 import Chats from './Routes/Chats/Chats';
+import Home from './Routes/Feed/Posts/Home';
 import PageError from './Routes/Errors/PageError';
 import Unauthorized from './Routes/Miscellaneous/Popups/Unauthorized';
 
@@ -19,8 +20,8 @@ const App = () => {
                 <Routes>
                     <Route path='/api/login' element={<Login />}></Route>
                     <Route path='/api/signup' element={<Signup />}></Route>
+                    <Route path='/api/home' element={<Home />}></Route>
                     <Route path='/api/account' element={<Account />}></Route>
-                    <Route path='/api/search' element={<UserIndex />}></Route>
                     <Route path='/api/index' element={<UserIndex />}></Route>
                     <Route path='/api/friends' element={<UserIndex />}></Route>
                     <Route path='/api/blocked' element={<UserIndex />}></Route>
