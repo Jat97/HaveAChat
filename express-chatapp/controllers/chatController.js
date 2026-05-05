@@ -24,7 +24,14 @@ exports.get_chats = async (req, res) => {
 
             const user_chats = [];
 
-            for(const chat of chats.rows) {
+            for(const chat of chats.rows) { 
+                const messages = await db.query(
+                    `SELECT * 
+                    FROM messages
+                    WHERE (sending_user = $1 AND receiving_user = $2) OR (sending_user = $2 AND receiving_user = $1)`,
+                    [user_key.logged_user.id, chat.user2]
+                );
+                
                 const chat_obj = {
                     id: chat.id,
                     user: {
@@ -34,16 +41,10 @@ exports.get_chats = async (req, res) => {
                         profile_picture: chat.profile_picture,
                         online: chat.online,
                         hidden: chat.hidden
-                    }  
+                    },
+                    messages: messages.rows  
                 }
                 
-                const messages = await db.query(
-                    `SELECT * 
-                    FROM messages
-                    WHERE (sending_user = $1 AND receiving_user = $2) OR (sending_user = $2 AND receiving_user = $1)`,
-                    [user_key.logged_user.id, chat_obj.user.id]
-                ); 
-
                 const request = await db.query(
                     `SELECT id,
                     requesting_user 
@@ -54,8 +55,7 @@ exports.get_chats = async (req, res) => {
 
                 user_chats.push(
                     {
-                        chat: chat_obj, 
-                        messages: messages.rows, 
+                        chat: chat_obj,  
                         request: request.rows.length > 0 ? request.rows[0] : null
                     }
                 );
