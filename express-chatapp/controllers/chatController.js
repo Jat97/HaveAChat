@@ -86,7 +86,8 @@ exports.create_chat = async (req, res) => {
 
             const new_chat = await db.query(
                 `INSERT INTO chats (user1, user2)
-                VALUES ($1, $2)`,
+                VALUES ($1, $2)
+                RETURNING *`,
                 [user_key.logged_user.id, user.rows[0].id]
             );
 
