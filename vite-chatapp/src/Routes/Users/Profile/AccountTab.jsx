@@ -2,127 +2,34 @@ import {useMutation} from '@tanstack/react-query';
 import {Link} from 'react-router-dom';
 import {UserGroupIcon, NoSymbolIcon, XMarkIcon} from '@heroicons/react/24/solid';
 import {useChatStore} from '../../../Context/ChatStore';
-import {useFetchLogged} from '../../Functions/Fetch/FetchLogged';
+import {useHiddenStatusMutation, useLogOutMutation, useDeleteAccountMutation} from '../../Functions/Mutations/UserMutations';
+import {useFetchLogged} from '../../Functions/Queries/UserQueries';
 import UserDisplay from '../UserDisplay';
 import {client} from '../../../client';
 
 const AccountTab = (props) => {
     const toggleTab = props.props;
 
-    const unauthorized = useChatStore((state) => state.unauthorized);
-    const setUnauthorized = useChatStore((state) => state.setUnauthorized);
+    const authorized = useChatStore((state) => state.authorized);
+    const setAuthorized = useChatStore((state) => state.setAuthorized);
     const setSiteError = useChatStore((state) => state.setSiteError);
 
-    const logData = useFetchLogged([unauthorized, setUnauthorized, setSiteError]);
+    const logData = useFetchLogged([authorized, setAuthorized, setSiteError]);
 
-    const userOnlineMutation = useMutation({
-        mutationFn: () => {
-            fetch('http://localhost:9000/api/user/hidden/toggle', {
-                method: 'PATCH',
-                credentials: 'include'
-            })
-            .then(res => {
-                if(res.ok === false) {
-                    throw Error(`${res.status}: ${res.statusText}`);
-                }
-                else {
-                    return res.json({});
-                }
-            })
-            .catch(err => setSiteError(err.msg))
-        },
-        onMutate: async () => {
-            await client.invalidateQueries({queryKey: ['logged']});
-
-            const logged = client.getQueryData(['logged']);
-
-            client.setQueryData(['logged'], {
-                ...logged,
-                hidden: logged.hidden ? false : true,
-            });
-
-            return {logged};
-        },
-        onError: (err, data, context) => {
-            client.setQueryData(['logged'], context.logged);
-        },
-        onSettled: () => {
-            client.invalidateQueries(['logged']);
-        }
-    });
-
-    const logOutMutation = useMutation({
-        mutationFn: () => {
-            fetch('http://localhost:9000/api/user/logout', {
-                method: 'PUT',
-                credentials: 'include'
-            })
-            .then(res => {
-                if(res.redirected) {
-                    window.location.href = res.url.replace('9000', '5173');
-                }
-                else if(res.ok === false) {
-                    throw Error(`${res.status}: ${res.statusText}`);
-                }
-                else {
-                    return res.json({});
-                }
-            })
-        },
-        onMutate: async () => {
-            await client.invalidateQueries({queryKey: ['logged']});
-
-            const logged = client.getQueryData(['logged']);
-
-            client.setQueryData(['logged'], {
-                ...logged,
-                online: false
-            });
-
-            return {logged};
-        },
-        onError: (err, data, context) => {
-            client.setQueryData(['logged'], context.logged);
-        },
-        onSuccess: () => {
-            client.invalidateQueries({queryKey: ['logged']});
-        }
-    });
-
-    const deleteAccountMutation = useMutation({
-        mutationFn: () => {
-            fetch('http://localhost:9000/api/user', {
-                method: 'DELETE',
-                credentials: 'include'
-            })
-            .then(res => {
-                if(res.ok === false) {
-                    throw Error(`${res.status}: ${res.statusText}`);
-                }
-                else if(res.redirected) {
-                    window.location.href = res.url;
-                }
-                else {
-                    return res.json();
-                }
-            })
-            .catch(err => setSiteError(err.message))
-        },
-        onSuccess: async () => {
-            return await queryClient.invalidateQueries({queryKey: ['user']});
-        }
-    });
+    const hidden_mutation = useHiddenStatusMutation(setSiteError);
+    const logout_mutation = useLogOutMutation(setSiteError);
+    const delete_account_mutation 
 
     const toggleOnlineStatus = () => {
-        userOnlineMutation.mutate();
+        hidden_status_mutation.mutate();
     }
 
     const logOut = () => {
-        logOutMutation.mutate();
+        logout_mutation.mutate();
     } 
 
     const deleteAccount = () => {
-        deleteAccountMutation.mutate();
+        delete_account_mutation.mutate();
     }
 
     return (
