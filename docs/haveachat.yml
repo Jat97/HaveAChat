@@ -234,6 +234,8 @@ paths:
                 example2:
                   value:
                     pass_error: The password is incorrect.
+        '500':
+          $ref: '#/components/responses/ServerError'
   
   /user/picture:
     patch:
