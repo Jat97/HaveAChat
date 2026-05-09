@@ -7,6 +7,7 @@ A simple app to send and receive messages from other users. Users can also add f
 ## Table of Contents
 
 + [Authentication & Authorization](#authentication--authorization)
++ [Error Codes](#error--codes)
 + [Users](#users)
 + [Friends](#friends)
 + [Blocked](#blocked)
@@ -15,13 +16,13 @@ A simple app to send and receive messages from other users. Users can also add f
 
 ## Authentication & Authorization
 
-When a request is sent to the API, the server checks for one of two JSONWebTokens in the request’s Cookie header:
+When logging into an account, or creating one with Have a Chat, users will receive a JSONWebToken named "usertoken" in the response body. The usertoken is required to perform all other operations on this API.
 
-1. usertoken: This token is sent to the client for users that are logging into an established account.
+## Error Codes
 
-2. signtoken: This token is sent to the client for users accessing the application through a newly-created account.
+**401 Unauthorized** - Received by the user if usertoken is missing from the Cookie header or has otherwise expired.
 
-If neither token can be read, then the server returns a 401 HTTP status code, blocking access to the API.
+**500 Internal Server Error** - Received by the user if an unexpected error occurrred while processing the request.
 
 ## Users
 
